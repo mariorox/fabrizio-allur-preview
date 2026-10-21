@@ -49,7 +49,7 @@ export function GarmentSelector({ value, onChange, assignedGarments = [], classN
               </span>
             )}
             <span className="text-xl">{GARMENT_ICONS[g]}</span>
-            <span className="tracking-wide uppercase text-[10px]">{GARMENT_LABELS[g]}</span>
+            <span className="text-[12.5px]">{GARMENT_LABELS[g]}</span>
           </button>
         );
       })}

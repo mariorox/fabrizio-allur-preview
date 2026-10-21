@@ -14,17 +14,18 @@ export function FabricCard({ fabric, selected, onClick, className }: FabricCardP
   return (
     <button
       onClick={onClick}
+      aria-pressed={selected}
       className={cn(
-        'group relative rounded-xl overflow-hidden border transition-all text-left w-full',
-        'hover:scale-[1.02] active:scale-[0.98]',
+        'group relative rounded-xl overflow-hidden border transition-colors text-left w-full bg-card',
+        'active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-primary',
         selected
-          ? 'border-primary ring-1 ring-primary/40 shadow-[0_0_16px_rgba(197,165,90,0.15)]'
-          : 'border-border hover:border-primary/40 bg-card',
+          ? 'border-primary ring-1 ring-primary/50'
+          : 'border-border hover:border-primary/40',
         className,
       )}
     >
-      {/* Texture image */}
-      <div className="aspect-square bg-background overflow-hidden">
+      {/* Amostra cortada na tesoura de picotar */}
+      <div className="pinked aspect-square bg-background overflow-hidden">
         <img
           src={`/api/files/${fabric.texture_image}`}
           alt={fabric.name}
@@ -33,7 +34,6 @@ export function FabricCard({ fabric, selected, onClick, className }: FabricCardP
         />
       </div>
 
-      {/* Selected badge */}
       {selected && (
         <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow">
           <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24"
@@ -43,16 +43,13 @@ export function FabricCard({ fabric, selected, onClick, className }: FabricCardP
         </div>
       )}
 
-      {/* Info */}
-      <div className="p-2.5 bg-card border-t border-border">
-        <p className="text-xs font-semibold text-foreground truncate"
-          style={{ fontFamily: 'var(--font-syne)' }}>
+      <div className="px-2.5 pt-1.5 pb-2.5">
+        <p className="font-display text-[14px] leading-snug text-foreground line-clamp-2">
           {fabric.name}
         </p>
-        <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{fabric.code}</p>
-        {fabric.category && (
-          <p className="text-[10px] text-primary/70 mt-1 truncate">{fabric.category}</p>
-        )}
+        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+          {fabric.code}{fabric.category ? ` · ${fabric.category}` : ''}
+        </p>
       </div>
     </button>
   );

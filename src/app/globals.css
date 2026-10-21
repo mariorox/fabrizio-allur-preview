@@ -8,7 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-apple);
-  --font-display: var(--font-apple);
+  --font-display: var(--font-serif);
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -47,114 +47,120 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 }
-
-/* ── Atelier Liquid Glass — Apple light identity ─────────────────────
-   Soft luminous canvas, atmospheric colour blooms, frosted-glass
-   surfaces, SF system type, Apple-blue accent. Built for a premium
-   high-ticket tailoring tool.                                        */
+/* ── Vesto · Sala de Prova ────────────────────────────────────────────
+   O provador de um ateliê à noite: espresso, couro, luz quente e o
+   dourado da marca. Títulos em EB Garamond, texto em Jost. Superfícies
+   são couro escuro (não vidro); tecidos aparecem com borda picotada. */
 :root {
-  --radius: 1rem;
+  --radius: 0.875rem;
 
-  /* SF Pro renders natively on Apple devices. Legacy --font-syne /
-     --font-dm-sans alias to it so inline references inherit SF.      */
-  --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Inter", system-ui, sans-serif;
-  --font-syne: var(--font-apple);
+  /* Fontes vêm de next/font no layout (--font-vesto-sans / -serif).
+     --font-syne / --font-dm-sans seguem como aliases legados.        */
+  --font-apple: var(--font-vesto-sans), "Jost", "Helvetica Neue", system-ui, sans-serif;
+  --font-serif: var(--font-vesto-serif), "EB Garamond", Georgia, serif;
+  --font-syne: var(--font-serif);
   --font-dm-sans: var(--font-apple);
 
-  --background:             oklch(0.968 0.005 255);   /* #EDF0F6 cool light */
-  --foreground:             oklch(0.205 0.012 268);   /* #1C1C22 graphite  */
+  /* Paleta */
+  --espresso: #1E1915;
+  --couro:    #2C241E;
+  --couro-2:  #362C25;
+  --dourado:  #C4925E;
+  --osso:     #EDE6DA;
+  --fumo:     #A39686;
 
-  /* Card = frosted white. Pair with .glass for true blur surfaces.   */
-  --card:                   oklch(1 0 0 / 0.72);
-  --card-foreground:        oklch(0.205 0.012 268);
-  --popover:                oklch(0.995 0.001 255);
-  --popover-foreground:     oklch(0.205 0.012 268);
+  --background:             var(--espresso);
+  --foreground:             var(--osso);
 
-  /* Primary = Apple blue */
-  --primary:                oklch(0.345 0.018 60);   /* ~#0A6CE0 */
-  --primary-foreground:     oklch(1 0 0);
+  --card:                   var(--couro);
+  --card-foreground:        var(--osso);
+  --popover:                var(--couro);
+  --popover-foreground:     var(--osso);
 
-  --secondary:              oklch(0.935 0.006 255);
-  --secondary-foreground:   oklch(0.255 0.012 268);
-  --muted:                  oklch(0.945 0.005 255);
-  --muted-foreground:       oklch(0.505 0.012 263);   /* #6E6E78 Apple gray */
-  --accent:                 oklch(0.92 0.008 75);
-  --accent-foreground:      oklch(0.255 0.012 268);
+  --primary:                var(--dourado);
+  --primary-foreground:     var(--espresso);
 
-  --destructive:            oklch(0.585 0.215 24);
-  --border:                 oklch(0.882 0.006 258);   /* hairline #D6D9E0 */
-  --input:                  oklch(0.905 0.006 258);
-  --ring:                   oklch(0.345 0.018 60);
+  --secondary:              var(--couro-2);
+  --secondary-foreground:   var(--osso);
+  --muted:                  var(--couro);
+  --muted-foreground:       var(--fumo);
+  --accent:                 var(--couro-2);
+  --accent-foreground:      var(--osso);
 
-  --chart-1: oklch(0.345 0.018 60);
-  --chart-2: oklch(0.68 0.13 200);
-  --chart-3: oklch(0.72 0.15 150);
-  --chart-4: oklch(0.78 0.15 70);
-  --chart-5: oklch(0.66 0.19 20);
+  --destructive:            #E0705A;
+  --border:                 color-mix(in oklch, var(--osso) 12%, transparent);
+  --input:                  color-mix(in oklch, var(--osso) 16%, transparent);
+  --ring:                   var(--dourado);
 
-  --sidebar:                    oklch(1 0 0 / 0.6);
-  --sidebar-foreground:         oklch(0.205 0.012 268);
-  --sidebar-primary:            oklch(0.345 0.018 60);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent:             oklch(0.92 0.008 75);
-  --sidebar-accent-foreground:  oklch(0.255 0.012 268);
-  --sidebar-border:             oklch(0.882 0.006 258);
-  --sidebar-ring:               oklch(0.345 0.018 60);
+  --chart-1: #C4925E;
+  --chart-2: #8FA9A3;
+  --chart-3: #B9A27A;
+  --chart-4: #D7B98F;
+  --chart-5: #E0705A;
 
-  /* Glass + shadow design tokens */
-  --glass-bg:        color-mix(in oklch, white 58%, transparent);
-  --glass-bg-strong: color-mix(in oklch, white 80%, transparent);
-  --glass-border:    color-mix(in oklch, white 70%, transparent);
-  --glass-blur:      blur(22px) saturate(180%);
-  --shadow-sm:  0 1px 2px -1px oklch(0.4 0.04 265 / 0.12);
-  --shadow-md:  0 2px 4px -2px oklch(0.4 0.04 265 / 0.10), 0 8px 20px -10px oklch(0.4 0.06 265 / 0.18);
-  --shadow-lg:  0 4px 8px -3px oklch(0.4 0.04 265 / 0.10), 0 24px 48px -18px oklch(0.4 0.08 265 / 0.28);
-  --shadow-glow: 0 8px 20px -6px oklch(0.345 0.018 60 / 0.32), 0 2px 6px -2px oklch(0.22 0.012 60 / 0.24);
+  --sidebar:                    var(--couro);
+  --sidebar-foreground:         var(--osso);
+  --sidebar-primary:            var(--dourado);
+  --sidebar-primary-foreground: var(--espresso);
+  --sidebar-accent:             var(--couro-2);
+  --sidebar-accent-foreground:  var(--osso);
+  --sidebar-border:             color-mix(in oklch, var(--osso) 12%, transparent);
+  --sidebar-ring:               var(--dourado);
+
+  /* Superfícies de couro (nomes "glass" mantidos por compatibilidade) */
+  --glass-bg:        color-mix(in oklch, var(--couro) 88%, transparent);
+  --glass-bg-strong: color-mix(in oklch, var(--couro-2) 94%, transparent);
+  --glass-border:    color-mix(in oklch, var(--osso) 10%, transparent);
+  --glass-blur:      blur(14px) saturate(120%);
+  --shadow-sm:  0 1px 2px -1px rgb(0 0 0 / 0.5);
+  --shadow-md:  0 2px 4px -2px rgb(0 0 0 / 0.45), 0 10px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-lg:  0 4px 10px -4px rgb(0 0 0 / 0.5), 0 28px 56px -22px rgb(0 0 0 / 0.75);
+  --shadow-glow: 0 8px 22px -8px color-mix(in oklch, var(--dourado) 55%, transparent);
 }
 
-/* App is single-theme; keep .dark mirroring light to avoid surprises. */
-.dark { color-scheme: light; }
+/* Tema único (escuro). */
+.dark { color-scheme: dark; }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  html { color-scheme: light; }
+  html { color-scheme: dark; }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-apple);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.011em;
     min-height: 100vh;
-    /* Atmospheric colour blooms over the light canvas */
+    /* Luz quente de abajur sobre o espresso */
     background-color: var(--background);
     background-image:
-      radial-gradient(58% 48% at 14% -4%,  oklch(0.88 0.035 75 / 0.30), transparent 72%),
-      radial-gradient(50% 44% at 102% 6%,  oklch(0.86 0.030 40 / 0.26), transparent 70%),
-      radial-gradient(64% 58% at 50% 116%, oklch(0.90 0.014 90 / 0.16), transparent 74%);
+      radial-gradient(60% 42% at 50% -8%, rgb(196 146 94 / 0.14), transparent 72%),
+      radial-gradient(48% 40% at 0% 100%, rgb(54 44 37 / 0.55), transparent 70%);
     background-attachment: fixed;
     background-repeat: no-repeat;
   }
-  /* Fine grain for tactile, premium depth */
+  /* Grão fino de tecido */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.4;
-    mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
   }
   h1, h2, h3, h4 {
-    font-family: var(--font-apple);
-    letter-spacing: -0.024em;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
+  ::selection { background: rgb(196 146 94 / 0.35); }
 }
 
 @layer components {
-  /* Frosted glass surface — the signature material */
+  /* Superfície de couro — material principal */
   .glass {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -162,19 +168,18 @@
     border: 1px solid var(--glass-border);
     box-shadow:
       var(--shadow-md),
-      inset 0 1px 0 0 oklch(1 0 0 / 0.7),
-      inset 0 -1px 0 0 oklch(1 0 0 / 0.15);
+      inset 0 1px 0 0 rgb(237 230 218 / 0.05);
   }
   .glass-strong {
     background: var(--glass-bg-strong);
-    backdrop-filter: blur(30px) saturate(185%);
-    -webkit-backdrop-filter: blur(30px) saturate(185%);
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
     border: 1px solid var(--glass-border);
     box-shadow:
       var(--shadow-lg),
-      inset 0 1px 0 0 oklch(1 0 0 / 0.8);
+      inset 0 1px 0 0 rgb(237 230 218 / 0.06);
   }
-  /* Specular sheen overlay for hero glass cards */
+  /* Brilho dourado discreto em cartões de destaque */
   .glass-sheen { position: relative; }
   .glass-sheen::after {
     content: "";
@@ -182,7 +187,18 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    background: linear-gradient(135deg, oklch(1 0 0 / 0.55) 0%, transparent 38%);
+    background: linear-gradient(135deg, rgb(196 146 94 / 0.08) 0%, transparent 40%);
+  }
+  /* Barras fixas (topo/rodapé) */
+  .bar-surface {
+    background: color-mix(in oklch, var(--espresso) 95%, transparent);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+  }
+  /* Assinatura: amostra cortada na tesoura de picotar */
+  .pinked {
+    -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
+            mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
   }
 }
 
@@ -191,18 +207,23 @@
   .shadow-float { box-shadow: var(--shadow-lg); }
   .shadow-glow  { box-shadow: var(--shadow-glow); }
 
-  /* Staggered entrance — premium page load */
+  /* Entrada única na carga da página */
   @keyframes rise {
-    from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(6px); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .animate-rise {
     opacity: 0;
-    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-6px); }
   }
   .animate-floaty { animation: floaty 7s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise { animation: none; opacity: 1; }
+    .animate-floaty { animation: none; }
+  }
 }

@@ -141,7 +141,7 @@ export function QuickFabricModal({ open, onClose, onCreated, atelierId, kind = '
           {/* Nome + Código */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Nome *</Label>
+              <Label className="text-[13px] text-muted-foreground">Nome *</Label>
               <Input
                 placeholder={isShoe ? 'Ex: Oxford Preto' : 'Ex: Super 120'}
                 value={name}
@@ -150,12 +150,12 @@ export function QuickFabricModal({ open, onClose, onCreated, atelierId, kind = '
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Código *</Label>
+              <Label className="text-[13px] text-muted-foreground">Código *</Label>
               <Input
                 placeholder={isShoe ? 'Ex: SAP-001' : 'Ex: FAB-001'}
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="font-mono bg-background border-border focus:border-primary/50 text-sm h-9"
+                className="bg-background border-border focus:border-primary/50 text-sm h-9"
               />
             </div>
           </div>
@@ -163,7 +163,7 @@ export function QuickFabricModal({ open, onClose, onCreated, atelierId, kind = '
           {/* Categoria — só para tecidos */}
           {!isShoe && (
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Categoria</Label>
+            <Label className="text-[13px] text-muted-foreground">Categoria</Label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}

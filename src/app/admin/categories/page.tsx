@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { VestoLogo } from '@/components/VestoLogo';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
@@ -83,14 +84,14 @@ export default function CategoriesPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex justify-center">
-          <span className="font-display text-sm sm:text-base font-semibold tracking-[0.18em] uppercase text-foreground whitespace-nowrap">Provador Digital</span>
+          <VestoLogo size="sm" slogan={false} />
         </div>
         <div className="w-9" />
       </header>
 
       <div className="flex-1 px-4 py-6 max-w-lg mx-auto w-full space-y-6">
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-primary mb-1"
+          <p className="text-[13px] text-primary mb-1"
             style={{ fontFamily: 'var(--font-syne)' }}>
             Configurações
           </p>

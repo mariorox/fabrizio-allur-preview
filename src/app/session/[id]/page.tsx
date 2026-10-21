@@ -192,26 +192,26 @@ export default function SessionPage({ params }: Props) {
     <div className="min-h-screen flex flex-col bg-background">
 
       {/* ── Top bar — frosted glass ── */}
-      <div className="sticky top-0 z-30 bg-white/55 backdrop-blur-xl backdrop-saturate-150
-                      border-b border-white/60 shadow-[0_8px_24px_-18px_rgba(28,32,54,0.3)]">
+      <div className="sticky top-0 z-30 bar-surface
+                      border-b border-border">
         {/* Logo bar — grid 3 colunas para mobile safe */}
-        <div className="grid grid-cols-3 items-center px-5 py-4">
+        <div className="flex items-center gap-2 px-3 sm:px-5 py-3">
           {/* left — back button */}
-          <div className="flex justify-start">
+          <div className="flex justify-start shrink-0">
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-black/5"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-white/5"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="hidden sm:inline">Início</span>
             </button>
           </div>
           {/* center — marca do ateliê (ambiente personalizado) */}
-          <div className="flex justify-center min-w-0">
+          <div className="flex-1 flex justify-center min-w-0">
             <AtelierBrand atelier={atelier} size="md" />
           </div>
-          {/* right — spacer */}
-          <span />
+          {/* right — spacer (equilibra o botão voltar) */}
+          <span className="w-9 shrink-0" />
         </div>
         <SessionHeader
           session={session}
@@ -241,7 +241,7 @@ export default function SessionPage({ params }: Props) {
               </div>
               <button
                 onClick={clearLook}
-                className="text-[11px] font-medium text-muted-foreground hover:text-foreground whitespace-nowrap shrink-0 px-2 py-1 rounded-full hover:bg-black/5 transition-colors"
+                className="text-[11px] font-medium text-muted-foreground hover:text-foreground whitespace-nowrap shrink-0 px-2 py-1 rounded-full hover:bg-white/5 transition-colors"
               >
                 Começar do zero
               </button>
@@ -250,9 +250,9 @@ export default function SessionPage({ params }: Props) {
 
           {/* Garment selector — escolha a peça que vai receber o tecido */}
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">
+            <p className="font-display text-[20px] leading-tight text-foreground mb-3">
               1 · Escolha a peça
-              <span className="ml-2 text-primary/80 normal-case tracking-normal">
+              <span className="ml-2 font-sans text-[13px] text-muted-foreground">
                 · monte quantas quiser
               </span>
             </p>
@@ -294,10 +294,10 @@ export default function SessionPage({ params }: Props) {
 
           {/* Catálogo — tecido para a peça, ou sapatos (peças únicas) */}
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">
+            <p className="font-display text-[20px] leading-tight text-foreground mb-3">
               {activeGarment === 'sapato' ? '2 · Escolha o sapato' : '2 · Tecido para'}
               {activeGarment !== 'sapato' && (
-                <span className="ml-2 text-primary normal-case tracking-normal font-medium">
+                <span className="ml-1.5 text-primary">
                   {GARMENT_ICONS[activeGarment]} {GARMENT_LABELS[activeGarment]}
                 </span>
               )}
@@ -313,8 +313,8 @@ export default function SessionPage({ params }: Props) {
           {/* Seu look — itens atribuídos */}
           {look.length > 0 && (
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
-                <Layers className="w-3 h-3" /> Seu look · {look.length} {look.length === 1 ? 'peça' : 'peças'}
+              <p className="font-display text-[20px] leading-tight text-foreground mb-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-primary" /> Seu look · {look.length} {look.length === 1 ? 'peça' : 'peças'}
               </p>
               <div className="flex flex-wrap gap-2">
                 {look.map((it) => (
@@ -328,7 +328,7 @@ export default function SessionPage({ params }: Props) {
                     <span>{GARMENT_LABELS[it.garment_type]} · {it.fabric.name}</span>
                     <button
                       onClick={() => removeLookItem(it.garment_type)}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-black/5 transition-colors"
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
                       aria-label="Remover"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -345,8 +345,7 @@ export default function SessionPage({ params }: Props) {
         {generations.length > 0 && (
           <aside className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-border bg-card p-4">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
-                style={{ fontFamily: 'var(--font-syne)' }}>
+              <p className="font-display text-[20px] leading-tight text-foreground">
                 Histórico
               </p>
               {generations.filter((g) => g.status === 'success').length >= 2 && (
@@ -380,7 +379,7 @@ export default function SessionPage({ params }: Props) {
 
       {/* ── Botão fixo: Gerar look ── */}
       {look.length > 0 && !generating && (
-        <div className="sticky bottom-0 z-30 border-t border-white/60 bg-white/55 backdrop-blur-xl backdrop-saturate-150 px-4 py-3.5">
+        <div className="sticky bottom-0 z-30 border-t border-border bar-surface px-4 py-3.5">
           <button
             onClick={handleGenerate}
             className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl
@@ -400,7 +399,7 @@ export default function SessionPage({ params }: Props) {
 
       {/* ── Generating overlay ── */}
       {generating && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-md flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-background/70 backdrop-blur-md flex items-center justify-center z-50">
           <div className="glass-strong rounded-3xl p-8 text-center max-w-xs mx-4">
             {atelier && (
               <div className="flex justify-center mb-4">

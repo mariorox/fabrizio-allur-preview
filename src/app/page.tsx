@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AtelierWithStats } from '@/types';
-import { Settings, BarChart2, MapPin, ArrowRight, Scissors, Sparkles } from 'lucide-react';
+import { Settings, BarChart2, MapPin, ArrowRight } from 'lucide-react';
+import { VestoLogo } from '@/components/VestoLogo';
 
 export default function MarketplacePage() {
   const router = useRouter();
@@ -21,119 +22,110 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen flex flex-col relative">
 
-      {/* ── Top bar — frosted glass ─────────────────────────────── */}
-      <header className="sticky top-0 z-30 px-5 py-4 grid grid-cols-3 items-center
-                         bg-white/55 backdrop-blur-xl backdrop-saturate-150
-                         border-b border-white/60 shadow-[0_1px_0_0_rgba(255,255,255,0.6),0_8px_24px_-16px_rgba(28,32,54,0.25)]">
-        <span />
-        <div className="flex justify-center">
-          <span className="font-display text-base sm:text-lg font-semibold tracking-[0.16em] uppercase text-foreground whitespace-nowrap">
-            Provador <span className="text-primary">Digital</span>
-          </span>
-        </div>
-        <div className="flex justify-end items-center">
-          <button
-            onClick={() => router.push('/admin/fabrics')}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 -mr-1 rounded-full hover:bg-black/5"
-            title="Catálogo (admin)"
-          >
-            <Settings className="w-[18px] h-[18px]" />
-          </button>
-          <button
-            onClick={() => router.push('/admin/stats')}
-            className="flex items-center text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-black/5"
-            title="Estatísticas"
-          >
-            <BarChart2 className="w-[18px] h-[18px]" />
-          </button>
+      {/* ── Topo ── */}
+      <header className="sticky top-0 z-30 bar-surface border-b border-border">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <VestoLogo size="md" />
+          <div className="flex items-center shrink-0">
+            <button
+              onClick={() => router.push('/admin/fabrics')}
+              className="p-2 sm:p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              title="Catálogo de tecidos"
+              aria-label="Catálogo de tecidos"
+            >
+              <Settings className="w-[18px] h-[18px]" />
+            </button>
+            <button
+              onClick={() => router.push('/admin/stats')}
+              className="p-2 sm:p-2.5 -mr-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              title="Estatísticas"
+              aria-label="Estatísticas"
+            >
+              <BarChart2 className="w-[18px] h-[18px]" />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-9 pb-12 sm:pt-14 sm:pb-16">
 
-        {/* ── Hero ── */}
-        <div className="text-center max-w-xl mx-auto mb-10 sm:mb-14">
-          <div className="animate-rise inline-flex items-center gap-2 mb-6 px-3.5 py-1.5 rounded-full
-                          glass text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground"
-            style={{ animationDelay: '40ms' }}>
-            <Scissors className="w-3 h-3 text-primary" />
-            Alfaiatarias high-ticket
-          </div>
-          <h1 className="animate-rise text-[2.4rem] sm:text-5xl font-semibold tracking-tight text-foreground mb-4 leading-[1.04]"
-            style={{ animationDelay: '120ms' }}>
-            Escolha seu{' '}
-            <span className="bg-gradient-to-br from-primary to-[oklch(0.5_0.04_60)] bg-clip-text text-transparent">
-              ateliê
-            </span>
+        {/* ── Abertura ── */}
+        <div className="animate-rise max-w-2xl mb-8 sm:mb-12">
+          <h1 className="text-[2.6rem] leading-[1.02] sm:text-6xl text-foreground">
+            Escolha o ateliê
           </h1>
-          <p className="animate-rise text-[15px] sm:text-base text-muted-foreground leading-relaxed"
-            style={{ animationDelay: '200ms' }}>
-            Os ateliês de alfaiataria mais reconhecidos à sua disposição.
-            Escolha um, prove as peças com o tecido escolhido e veja antes de produzir.
+          <p className="mt-3 sm:mt-4 text-[15px] sm:text-[17px] text-muted-foreground leading-relaxed max-w-[52ch]">
+            Cada ateliê tem seu próprio catálogo de tecidos. Escolha um para fotografar o cliente
+            e ver a peça pronta antes de cortar.
           </p>
         </div>
 
-        {/* ── Grid de ateliês ── */}
+        {/* ── Ateliês ── */}
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-3xl overflow-hidden glass animate-pulse">
-                <div className="h-32 bg-black/5" />
+              <div key={i} className="rounded-2xl overflow-hidden glass animate-pulse">
+                <div className="h-36 bg-white/5" />
                 <div className="p-4 space-y-2">
-                  <div className="h-4 bg-black/5 rounded w-2/3" />
-                  <div className="h-3 bg-black/5 rounded w-1/2" />
+                  <div className="h-4 bg-white/5 rounded w-2/3" />
+                  <div className="h-3 bg-white/5 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
+        ) : ateliers.length === 0 ? (
+          <div className="glass rounded-2xl p-8 text-center">
+            <p className="text-foreground">Nenhum ateliê ativo ainda.</p>
+            <p className="text-sm text-muted-foreground mt-1">Cadastre um ateliê para começar a fazer provas.</p>
+          </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {ateliers.map((a, i) => (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {ateliers.map((a) => (
               <button
                 key={a.id}
                 onClick={() => router.push(`/atelier/${a.slug}`)}
-                className="animate-rise group glass glass-sheen rounded-3xl overflow-hidden text-left
-                           hover:-translate-y-1 transition-transform duration-300"
-                style={{ animationDelay: `${260 + i * 60}ms` }}
+                className="group glass rounded-2xl overflow-hidden text-left transition-colors
+                           hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-primary"
               >
                 {/* Capa */}
-                <div className="relative h-32 overflow-hidden">
+                <div className="relative h-36 overflow-hidden">
                   {a.cover_image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={a.cover_image}
                       alt=""
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                  {/* Avatar */}
-                  <div className="absolute -bottom-6 left-4 w-14 h-14 rounded-2xl overflow-hidden
-                                  ring-4 ring-white/80 shadow-lg bg-white">
-                    {a.avatar_image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.avatar_image} alt={a.name} className="w-full h-full object-cover" />
-                    )}
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                 </div>
 
-                {/* Info */}
-                <div className="pt-8 px-4 pb-4">
-                  <h3 className="text-[15px] font-semibold text-foreground leading-tight">{a.name}</h3>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
-                    <MapPin className="w-3 h-3" />
-                    <span className="truncate">{a.neighborhood ?? a.city}</span>
+                {/* Identificação */}
+                <div className="px-4 pb-4 flex gap-3">
+                  <div className="-mt-7 w-14 h-14 shrink-0 rounded-full overflow-hidden ring-[3px] ring-card bg-secondary relative">
+                    {a.avatar_image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.avatar_image} alt="" className="w-full h-full object-cover" />
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground/90 mt-2 leading-snug line-clamp-2 min-h-[2rem]">
+                  <div className="min-w-0 pt-2.5 flex-1">
+                    <h3 className="font-display text-[19px] leading-tight text-foreground">{a.name}</h3>
+                    <p className="flex items-center gap-1 text-[12.5px] text-muted-foreground mt-0.5">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{a.neighborhood ?? a.city}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="px-4 pb-4">
+                  <p className="text-[13px] text-muted-foreground leading-snug line-clamp-2 min-h-[2.4em]">
                     {a.specialty ?? a.tagline}
                   </p>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/50">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-foreground/80">
-                      <Sparkles className="w-3 h-3 text-primary" />
-                      {a.fabric_count} tecidos
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                    <span className="text-[12.5px] text-foreground/80">
+                      {a.fabric_count} {a.fabric_count === 1 ? 'tecido' : 'tecidos'}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary group-hover:gap-1.5 transition-all">
-                      Entrar <ArrowRight className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+                      Abrir ateliê <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
                   </div>
                 </div>
@@ -143,10 +135,8 @@ export default function MarketplacePage() {
         )}
       </main>
 
-      <footer className="relative z-10 px-6 pb-7 flex justify-center">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-muted-foreground/70">
-          Marketplace de alfaiataria sob medida
-        </p>
+      <footer className="relative z-10 px-6 pb-8 flex justify-center">
+        <p className="text-[12px] text-muted-foreground/70">Vesto · alfaiataria sob medida, provada antes do corte</p>
       </footer>
     </div>
   );

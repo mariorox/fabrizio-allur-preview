@@ -90,22 +90,23 @@ export default function CapturePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-3">
+      <div className="px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 border-b border-border">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="gap-1 text-muted-foreground hover:text-foreground"
+          aria-label="Voltar"
+          className="gap-1 text-muted-foreground hover:text-foreground shrink-0"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
+          <ArrowLeft className="w-5 h-5" />
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <div className="text-foreground">
-          <p className="font-semibold text-sm">Capturar foto</p>
-          <p className="text-xs text-muted-foreground">{session.client_name || 'Cliente'}</p>
+        <div className="text-foreground min-w-0 flex-1">
+          <p className="font-display text-[18px] leading-tight">Capturar foto</p>
+          <p className="text-[12.5px] text-muted-foreground truncate">{session.client_name || 'Cliente'}</p>
         </div>
         {atelier && (
-          <div className="ml-auto">
+          <div className="ml-auto shrink-0 hidden sm:block">
             <AtelierBrand atelier={atelier} size="sm" showProduct={false} />
           </div>
         )}

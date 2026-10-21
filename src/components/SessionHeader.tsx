@@ -26,7 +26,7 @@ export function SessionHeader({ session, currentFabric, photoCount }: SessionHea
     session.current_garment === 'polo' ? '👕' : '👖';
 
   return (
-    <div className="border-t border-white/50 px-4 py-3 flex items-center gap-4 flex-wrap">
+    <div className="border-t border-border px-4 py-3 flex items-center gap-4 flex-wrap">
 
       {/* Client info */}
       <div className="flex items-center gap-2.5 min-w-0">
@@ -65,7 +65,7 @@ export function SessionHeader({ session, currentFabric, photoCount }: SessionHea
             />
             <div className="hidden sm:block text-xs min-w-0">
               <p className="text-foreground leading-none max-w-[80px] truncate">{currentFabric.name}</p>
-              <p className="text-muted-foreground font-mono mt-0.5">{currentFabric.code}</p>
+              <p className="text-muted-foreground mt-0.5">{currentFabric.code}</p>
             </div>
           </div>
         )}
@@ -97,7 +97,7 @@ export function SessionHeader({ session, currentFabric, photoCount }: SessionHea
               <Camera className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           )}
-          <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center
+          <div className="absolute inset-0 rounded-full bg-white/50 flex items-center justify-center
                           opacity-0 group-hover:opacity-100 transition-opacity">
             <Camera className="w-3.5 h-3.5 text-white" />
           </div>

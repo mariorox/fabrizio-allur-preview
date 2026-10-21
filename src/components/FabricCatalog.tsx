@@ -105,12 +105,11 @@ export function FabricCatalog({ selectedFabricId, onSelect, atelierId, kind = 'f
             key={cat ?? '__all'}
             onClick={() => setCategory(cat === category ? null : cat)}
             className={cn(
-              'text-[10px] tracking-wider uppercase px-3 py-1 rounded-full border transition-all',
+              'text-[13px] px-3.5 py-1.5 rounded-full border transition-colors',
               category === cat
                 ? 'border-primary text-primary bg-primary/10'
                 : 'border-border text-muted-foreground hover:border-border hover:text-foreground hover:bg-accent',
             )}
-            style={{ fontFamily: 'var(--font-syne)' }}
           >
             {cat ?? 'Todos'}
           </button>

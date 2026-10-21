@@ -1,6 +1,7 @@
 'use client';
 
 import type { Atelier } from '@/types';
+import { VestoLogo } from './VestoLogo';
 
 /** Deriva um monograma de 2 letras a partir do nome do ateliê.
  *  "Pedro Corulla" → "PC" · "Sartoria Lucca" → "SL" · "Merino" → "ME" */
@@ -25,7 +26,7 @@ const SIZES: Record<Size, { badge: string; mono: string; name: string; eyebrow: 
 interface Props {
   atelier?: Pick<Atelier, 'name' | 'avatar_image'> | null;
   size?: Size;
-  /** Mostra a etiqueta "PROVADOR DIGITAL" como assinatura do produto. */
+  /** Mostra a etiqueta "VESTO" como assinatura do produto. */
   showProduct?: boolean;
   /** Usa a foto/logo do ateliê dentro do badge (em vez do monograma). */
   useImage?: boolean;
@@ -34,18 +35,14 @@ interface Props {
 
 /**
  * Marca personalizada do ambiente: monograma + nome do ateliê.
- * Sem ateliê (marketplace/admin), cai no wordmark "Provador Digital".
+ * Sem ateliê (marketplace/admin), cai no logo Vesto.
  */
 export function AtelierBrand({ atelier, size = 'md', showProduct = true, useImage = false, className = '' }: Props) {
   const s = SIZES[size];
 
   // Fallback: produto sem ateliê.
   if (!atelier) {
-    return (
-      <span className={`font-display ${s.name} font-semibold tracking-[0.16em] uppercase text-foreground whitespace-nowrap ${className}`}>
-        Provador <span className="text-primary">Digital</span>
-      </span>
-    );
+    return <VestoLogo size="sm" slogan={size !== 'sm'} className={className} />;
   }
 
   return (
@@ -53,8 +50,7 @@ export function AtelierBrand({ atelier, size = 'md', showProduct = true, useImag
       {/* Monograma — "logo" do ateliê */}
       <div
         className={`${s.badge} shrink-0 grid place-items-center overflow-hidden
-                    bg-gradient-to-br from-primary to-primary/75 text-primary-foreground
-                    ring-1 ring-white/40 shadow-[0_4px_14px_-6px_rgba(28,32,54,0.55)]`}
+                    bg-secondary text-primary ring-1 ring-primary/40`}
       >
         {useImage && atelier.avatar_image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -69,11 +65,11 @@ export function AtelierBrand({ atelier, size = 'md', showProduct = true, useImag
       {/* Wordmark */}
       <div className="min-w-0 leading-tight">
         {showProduct && (
-          <p className={`${s.eyebrow} tracking-[0.22em] uppercase text-muted-foreground/80 leading-none mb-0.5`}>
-            Provador Digital
+          <p className={`${s.eyebrow} tracking-[0.22em] uppercase text-primary/80 leading-none mb-1`}>
+            Vesto
           </p>
         )}
-        <p className={`font-display ${s.name} font-semibold tracking-tight text-foreground truncate`}>
+        <p className={`font-display ${s.name} text-foreground truncate`}>
           {atelier.name}
         </p>
       </div>

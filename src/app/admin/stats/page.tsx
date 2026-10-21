@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, TrendingUp, Users, Sparkles, CheckCircle, BarChart2, Shirt, Clock, Flame, X, ExternalLink, Cpu, Zap, AlertTriangle } from 'lucide-react';
+import { VestoLogo } from '@/components/VestoLogo';
 import type { DashboardStats } from '@/lib/db';
 import { GARMENT_LABELS } from '@/types';
 
@@ -66,7 +67,7 @@ export default function StatsPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex justify-center">
-          <span className="font-display text-sm sm:text-base font-semibold tracking-[0.18em] uppercase text-foreground whitespace-nowrap">Provador Digital</span>
+          <VestoLogo size="sm" slogan={false} />
         </div>
         <div className="w-9" />
       </header>
@@ -77,7 +78,7 @@ export default function StatsPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <BarChart2 className="w-4 h-4 text-primary" />
-            <p className="text-[10px] tracking-widest uppercase text-primary"
+            <p className="text-[13px] text-primary"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Dashboard
             </p>
@@ -95,7 +96,7 @@ export default function StatsPage() {
         <div className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Cpu className="w-3.5 h-3.5 text-primary" />
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
+            <p className="font-display text-[19px] leading-tight text-foreground"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Inteligência Artificial
             </p>
@@ -133,7 +134,7 @@ export default function StatsPage() {
               {providerStatus.models && (
                 <div className="flex flex-wrap gap-1.5">
                   {providerStatus.models.map((m) => (
-                    <span key={m} className="text-[9px] px-2 py-0.5 rounded-full bg-border/50 text-muted-foreground font-mono">
+                    <span key={m} className="text-[9px] px-2 py-0.5 rounded-full bg-border/50 text-muted-foreground">
                       {m}
                     </span>
                   ))}
@@ -228,7 +229,7 @@ export default function StatsPage() {
 
         {/* ── Gráfico diário ── */}
         <div className="bg-card border border-border rounded-2xl p-5">
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-4"
+          <p className="font-display text-[19px] leading-tight text-foreground mb-4"
             style={{ fontFamily: 'var(--font-syne)' }}>
             Prévias — últimos 30 dias
           </p>
@@ -281,7 +282,7 @@ export default function StatsPage() {
           <div className="bg-card border border-border rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Shirt className="w-3.5 h-3.5 text-primary" />
-              <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
+              <p className="font-display text-[19px] leading-tight text-foreground"
                 style={{ fontFamily: 'var(--font-syne)' }}>
                 Peças mais pedidas
               </p>
@@ -324,7 +325,7 @@ export default function StatsPage() {
 
           {/* Tecidos mais usados */}
           <div className="bg-card border border-border rounded-2xl p-5">
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-4"
+            <p className="font-display text-[19px] leading-tight text-foreground mb-4"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Tecidos mais usados
             </p>
@@ -351,7 +352,7 @@ export default function StatsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-xs text-foreground truncate">{f.fabric_name}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono ml-2 shrink-0">
+                          <span className="text-[10px] text-muted-foreground ml-2 shrink-0">
                             {f.count}×
                           </span>
                         </div>
@@ -378,7 +379,7 @@ export default function StatsPage() {
         {/* ── Atividade mensal ── */}
         {!loading && stats && stats.monthly_activity.length > 1 && (
           <div className="bg-card border border-border rounded-2xl p-5">
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-4"
+            <p className="font-display text-[19px] leading-tight text-foreground mb-4"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Evolução mensal
             </p>
@@ -413,7 +414,7 @@ export default function StatsPage() {
         <div className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
+            <p className="font-display text-[19px] leading-tight text-foreground"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Últimas prévias geradas
             </p>
@@ -447,7 +448,7 @@ export default function StatsPage() {
                     <p className="text-[9px] text-foreground text-center leading-tight line-clamp-1 w-full">
                       {p.fabric_name}
                     </p>
-                    <p className="text-[8px] text-muted-foreground font-mono">{p.fabric_code}</p>
+                    <p className="text-[8px] text-muted-foreground">{p.fabric_code}</p>
                   </div>
                 </button>
               ))}
@@ -459,7 +460,7 @@ export default function StatsPage() {
         <div className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-3.5 h-3.5 text-primary" />
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
+            <p className="font-display text-[19px] leading-tight text-foreground"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Horários de pico
             </p>
@@ -480,7 +481,7 @@ export default function StatsPage() {
         <div className="bg-card border border-border rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Flame className="w-3.5 h-3.5 text-primary" />
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground"
+            <p className="font-display text-[19px] leading-tight text-foreground"
               style={{ fontFamily: 'var(--font-syne)' }}>
               Combinações mais pedidas
             </p>
@@ -518,7 +519,7 @@ export default function StatsPage() {
                           <span className="text-muted-foreground mx-1">·</span>
                           {c.fabric_name}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-mono ml-2 shrink-0">
+                        <span className="text-[10px] text-muted-foreground ml-2 shrink-0">
                           {c.count}×
                         </span>
                       </div>
@@ -570,7 +571,7 @@ export default function StatsPage() {
                 <p className="text-xs text-muted-foreground">
                   {lightbox.fabric_name}
                   {lightbox.fabric_code && (
-                    <span className="font-mono ml-1 text-muted-foreground">· {lightbox.fabric_code}</span>
+                    <span className="ml-1 text-muted-foreground">· {lightbox.fabric_code}</span>
                   )}
                 </p>
               </div>

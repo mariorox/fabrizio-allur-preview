@@ -51,7 +51,7 @@ export default function AdminFabricsPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-30 bar-surface border-b border-border px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
         <button
           onClick={() => router.push('/')}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 p-2 -ml-2"
@@ -61,11 +61,10 @@ export default function AdminFabricsPage() {
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground text-sm truncate"
-            style={{ fontFamily: 'var(--font-syne)' }}>
-            {isShoe ? 'Catálogo de Sapatos' : 'Catálogo de Tecidos'}
+          <p className="font-display text-[18px] leading-tight text-foreground truncate">
+            {isShoe ? 'Sapatos' : 'Tecidos'}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground truncate">
             {isShoe
               ? `${fabrics.length} sapato${fabrics.length !== 1 ? 's' : ''} cadastrado${fabrics.length !== 1 ? 's' : ''}`
               : `${fabrics.length} tecido${fabrics.length !== 1 ? 's' : ''} cadastrado${fabrics.length !== 1 ? 's' : ''}`}
@@ -169,21 +168,21 @@ export default function AdminFabricsPage() {
               <table className="w-full">
                 <thead className="bg-background border-b border-border">
                   <tr>
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
+                    <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3"
                       style={{ fontFamily: 'var(--font-syne)' }}>{isShoe ? 'Sapato' : 'Tecido'}</th>
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
+                    <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3"
                       style={{ fontFamily: 'var(--font-syne)' }}>Código</th>
                     {!isShoe && (
-                      <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell"
+                      <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3 hidden md:table-cell"
                         style={{ fontFamily: 'var(--font-syne)' }}>Categoria</th>
                     )}
                     {!isShoe && (
-                      <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden lg:table-cell"
+                      <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell"
                         style={{ fontFamily: 'var(--font-syne)' }}>Coleção</th>
                     )}
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell"
+                    <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3 hidden md:table-cell"
                       style={{ fontFamily: 'var(--font-syne)' }}>Usos</th>
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
+                    <th className="text-left text-[12.5px] font-medium text-muted-foreground px-4 py-3"
                       style={{ fontFamily: 'var(--font-syne)' }}>Ativo</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -202,7 +201,7 @@ export default function AdminFabricsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-muted-foreground bg-background border border-border px-2 py-1 rounded whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground bg-background border border-border px-2 py-1 rounded whitespace-nowrap">
                           {fabric.code}
                         </span>
                       </td>

@@ -104,7 +104,7 @@ export default function PreviewPage({ params }: Props) {
     if (!generation?.result_image) return;
 
     const shareText =
-      `Prévia da sua peça — Provador Digital\n` +
+      `Prévia da sua peça — Vesto\n` +
       `Peça: ${GARMENT_LABELS[generation.garment_type]}\n` +
       `Tecido: ${generation.fabric_name} (${generation.fabric_code})`;
 
@@ -116,7 +116,7 @@ export default function PreviewPage({ params }: Props) {
         const ext = blob.type.includes('png') ? 'png' : 'jpg';
         const file = new File(
           [blob],
-          `preview-${generation.fabric_code ?? 'provador'}.${ext}`,
+          `preview-${generation.fabric_code ?? 'vesto'}.${ext}`,
           { type: blob.type }
         );
 
@@ -128,14 +128,14 @@ export default function PreviewPage({ params }: Props) {
             duration: 6000,
           });
           await navigator.share({
-            title: 'Provador Digital',
+            title: 'Vesto',
             files: [file],
           });
           return;
         }
 
         // Suporta share mas não arquivos — envia só texto
-        await navigator.share({ title: 'Provador Digital', text: shareText });
+        await navigator.share({ title: 'Vesto', text: shareText });
         return;
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
@@ -161,27 +161,27 @@ export default function PreviewPage({ params }: Props) {
     <div className="min-h-screen bg-background flex flex-col">
 
       {/* ── Header ── */}
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-30 bar-surface border-b border-border px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
         <button
           onClick={() => router.push(`/session/${sessionId}`)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 p-2 -ml-2"
+          aria-label="Voltar para a sessão"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0 p-2 rounded-full hover:bg-white/5"
         >
           <ArrowLeft className="w-5 h-5" />
-          Sessão
+          <span className="hidden sm:inline">Sessão</span>
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate"
-            style={{ fontFamily: 'var(--font-syne)' }}>
+          <p className="font-display text-[17px] leading-tight text-foreground line-clamp-2">
             {generation
-              ? `${GARMENT_LABELS[generation.garment_type]} — ${generation.fabric_name}`
-              : 'Carregando...'}
+              ? `${GARMENT_LABELS[generation.garment_type]} em ${generation.fabric_name}`
+              : 'Carregando…'}
           </p>
           {generation?.fabric_code && (
-            <p className="text-[10px] text-muted-foreground font-mono">{generation.fabric_code}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{generation.fabric_code}</p>
           )}
         </div>
         {atelier && (
-          <div className="shrink-0">
+          <div className="shrink-0 hidden sm:block">
             <AtelierBrand atelier={atelier} size="sm" showProduct={false} />
           </div>
         )}
@@ -282,7 +282,7 @@ export default function PreviewPage({ params }: Props) {
                     style={{ fontFamily: 'var(--font-syne)' }}>
                     {generation.fabric_name}
                   </p>
-                  <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{generation.fabric_code}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{generation.fabric_code}</p>
                 </div>
                 <span className="text-xl shrink-0">{garmentEmoji}</span>
               </div>
@@ -292,7 +292,7 @@ export default function PreviewPage({ params }: Props) {
 
         {/* ── Action panel ── */}
         <aside className="w-full md:w-64 border-t md:border-t-0 md:border-l border-border bg-card p-4 space-y-2">
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3"
+          <p className="font-display text-[19px] leading-tight text-foreground mb-3"
             style={{ fontFamily: 'var(--font-syne)' }}>
             Ações
           </p>
@@ -329,7 +329,7 @@ export default function PreviewPage({ params }: Props) {
               </ActionBtn>
 
               <div className="h-px bg-border my-3" />
-              <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-2"
+              <p className="font-display text-[19px] leading-tight text-foreground mb-2"
                 style={{ fontFamily: 'var(--font-syne)' }}>
                 Compartilhar
               </p>

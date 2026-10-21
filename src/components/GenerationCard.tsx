@@ -70,7 +70,7 @@ export function GenerationCard({ generation, selected, selectable, onSelect, onC
           <div className="absolute bottom-2 left-2 right-2">
             <div className="bg-black/70 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
               <Loader2 className="w-2.5 h-2.5 text-primary animate-spin" />
-              <span className="text-[9px] text-white tracking-wider uppercase"
+              <span className="text-[11px] text-white"
                 style={{ fontFamily: 'var(--font-syne)' }}>
                 gerando
               </span>

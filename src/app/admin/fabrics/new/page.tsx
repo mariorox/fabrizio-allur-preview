@@ -93,7 +93,7 @@ export default function NewFabricPage() {
         <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
           {/* Texture photo */}
           <div>
-            <Label className="mb-2 block text-muted-foreground text-xs uppercase tracking-wider">
+            <Label className="mb-2 block text-muted-foreground text-[13px]">
               {isShoe ? 'Foto do sapato *' : 'Foto da textura *'}
             </Label>
             <div
@@ -132,7 +132,7 @@ export default function NewFabricPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs text-muted-foreground uppercase tracking-wider">
+              <Label htmlFor="name" className="text-[13px] text-muted-foreground">
                 {isShoe ? 'Nome do sapato *' : 'Nome do tecido *'}
               </Label>
               <Input
@@ -147,7 +147,7 @@ export default function NewFabricPage() {
 
             {/* Code */}
             <div className="space-y-2">
-              <Label htmlFor="code" className="text-xs text-muted-foreground uppercase tracking-wider">
+              <Label htmlFor="code" className="text-[13px] text-muted-foreground">
                 Código *
               </Label>
               <Input
@@ -156,14 +156,14 @@ export default function NewFabricPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 required
-                className="font-mono bg-background border-border focus:border-primary/50"
+                className="bg-background border-border focus:border-primary/50"
               />
             </div>
 
             {/* Category — só tecidos */}
             {!isShoe && (
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-xs text-muted-foreground uppercase tracking-wider">
+                <Label htmlFor="category" className="text-[13px] text-muted-foreground">
                   Categoria
                 </Label>
                 <select
@@ -183,7 +183,7 @@ export default function NewFabricPage() {
             {/* Collection — só tecidos */}
             {!isShoe && (
               <div className="space-y-2">
-                <Label htmlFor="collection" className="text-xs text-muted-foreground uppercase tracking-wider">
+                <Label htmlFor="collection" className="text-[13px] text-muted-foreground">
                   Coleção
                 </Label>
                 <Input

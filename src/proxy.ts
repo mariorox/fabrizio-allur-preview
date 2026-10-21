@@ -26,5 +26,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Assets estáticos ficam livres (a tela de senha usa o fundo/ícones)
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|ateliers/|garments/|hero-alfaiataria.jpg).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|brand/|ateliers/|garments/|hero-alfaiataria.jpg).*)'],
 };

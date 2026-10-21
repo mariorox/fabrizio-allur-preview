@@ -213,7 +213,7 @@ export default function NewCollectionPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="collection-name" className="text-xs text-muted-foreground uppercase tracking-wider">
+              <Label htmlFor="collection-name" className="text-[13px] text-muted-foreground">
                 Nome da coleção *
               </Label>
               <Input
@@ -227,7 +227,7 @@ export default function NewCollectionPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-xs text-muted-foreground uppercase tracking-wider">
+              <Label htmlFor="category" className="text-[13px] text-muted-foreground">
                 Categoria (aplicada a todos)
               </Label>
               <select
@@ -327,7 +327,7 @@ export default function NewCollectionPage() {
                       value={fabric.code}
                       onChange={(e) => updateFabric(fabric.id, 'code', e.target.value.toUpperCase())}
                       placeholder="CÓDIGO"
-                      className="text-sm h-8 font-mono bg-background border-border focus:border-primary/50"
+                      className="text-sm h-8 bg-background border-border focus:border-primary/50"
                     />
                   </div>
                 </div>
