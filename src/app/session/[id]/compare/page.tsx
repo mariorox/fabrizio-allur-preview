@@ -42,31 +42,31 @@ export default function ComparePage({ params }: Props) {
 
   if (viewMode === 'compare') {
     return (
-      <div className="min-h-screen bg-zinc-900 flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <header className="px-4 py-3 flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setViewMode('select')}
-            className="gap-1 text-zinc-300 hover:text-white hover:bg-white/10"
+            className="gap-1 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4" />
             Selecionar
           </Button>
-          <p className="text-white font-semibold text-sm">Comparação lado a lado</p>
+          <p className="text-foreground font-semibold text-sm">Comparação lado a lado</p>
         </header>
 
         <div className={`flex-1 grid gap-2 p-3 ${selected.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {selected.map((gen) => (
             <div key={gen.id} className="flex flex-col gap-2">
-              <div className="flex-1 rounded-xl overflow-hidden bg-zinc-800">
+              <div className="flex-1 rounded-2xl overflow-hidden bg-card">
                 <img
                   src={`/api/files/${gen.result_image}`}
                   alt="Prévia"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="bg-zinc-800 rounded-xl p-3 text-center">
+              <div className="bg-card rounded-2xl p-3 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   {gen.fabric_texture && (
                     <img
@@ -75,10 +75,10 @@ export default function ComparePage({ params }: Props) {
                       className="w-6 h-6 rounded object-cover"
                     />
                   )}
-                  <p className="font-semibold text-white text-sm truncate">{gen.fabric_name}</p>
+                  <p className="font-semibold text-foreground text-sm truncate">{gen.fabric_name}</p>
                 </div>
-                <p className="text-xs text-zinc-400 font-mono">{gen.fabric_code}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{GARMENT_LABELS[gen.garment_type]}</p>
+                <p className="text-xs text-muted-foreground font-mono">{gen.fabric_code}</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">{GARMENT_LABELS[gen.garment_type]}</p>
               </div>
             </div>
           ))}
@@ -88,21 +88,21 @@ export default function ComparePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-zinc-200 px-4 py-3 flex items-center gap-3">
+      <header className="bg-card/70 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push(`/session/${sessionId}`)}
-          className="gap-1 text-zinc-600"
+          className="gap-1 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
           Sessão
         </Button>
         <div className="flex-1">
-          <p className="font-semibold text-zinc-900 text-sm">Comparar prévias</p>
-          <p className="text-xs text-zinc-400">Selecione 2 ou 3 prévias para comparar</p>
+          <p className="font-semibold text-foreground text-sm">Comparar prévias</p>
+          <p className="text-xs text-muted-foreground">Selecione 2 ou 3 prévias para comparar</p>
         </div>
         <Button
           size="sm"
@@ -117,14 +117,14 @@ export default function ComparePage({ params }: Props) {
 
       <div className="flex-1 p-4">
         {generations.length === 0 ? (
-          <div className="text-center py-16 text-zinc-400">
+          <div className="text-center py-16 text-muted-foreground">
             <p className="text-4xl mb-3">📸</p>
             <p className="font-medium">Nenhuma prévia disponível</p>
             <p className="text-sm mt-1">Gere pelo menos 2 prévias para comparar</p>
           </div>
         ) : (
           <>
-            <p className="text-sm text-zinc-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {selected.length === 0
                 ? 'Selecione as prévias que deseja comparar'
                 : selected.length === 1

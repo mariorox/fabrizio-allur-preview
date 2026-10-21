@@ -12,8 +12,28 @@ export interface TryOnResult {
   resultImagePath: string;    // absolute filesystem path
 }
 
+/** Uma peça a aplicar: textura + tipo de roupa. */
+export interface TryOnGarment {
+  fabricTexturePath: string;
+  garmentType: GarmentType;
+  fabricName?: string;
+}
+
+/**
+ * Aplica VÁRIAS peças numa ÚNICA passada, sempre a partir da foto base
+ * (a foto original/pristina). Evita a degradação de "cópia de cópia" e o
+ * desvio de enquadramento que ocorrem ao reeditar imagens já geradas.
+ */
+export interface MultiTryOnParams {
+  clientPhotoPath: string;    // foto base (original) — absoluto
+  garments: TryOnGarment[];   // todas aplicadas de uma vez sobre a base
+  outputPath: string;         // onde salvar — absoluto
+}
+
 export interface AIAdapter {
   generateTryOn(params: TryOnParams): Promise<TryOnResult>;
+  /** Opcional — se ausente, a orquestração encadeia generateTryOn (degrada). */
+  generateMultiTryOn?(params: MultiTryOnParams): Promise<TryOnResult>;
 }
 
 export function getAIAdapter(): AIAdapter {

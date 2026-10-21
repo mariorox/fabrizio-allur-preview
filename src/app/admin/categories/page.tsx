@@ -12,8 +12,6 @@ interface Category {
   sort_order: number;
 }
 
-const LOGO_URL =
-  'https://img1.wsimg.com/isteam/ip/42736041-0c4b-482d-bb3e-03f79e8f52ca/fabrizio_logo_horiz_branco.png/:/rs=h:99,cg:true,m/qt=q:95';
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -85,7 +83,7 @@ export default function CategoriesPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex justify-center">
-          <img src={LOGO_URL} alt="Fabrizio Allur" className="h-6 w-auto max-w-[130px] object-contain" />
+          <span className="font-display text-sm sm:text-base font-semibold tracking-[0.18em] uppercase text-foreground whitespace-nowrap">Provador Digital</span>
         </div>
         <div className="w-9" />
       </header>

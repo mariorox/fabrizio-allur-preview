@@ -1,8 +1,8 @@
 /**
  * Google Gemini Adapter — 3 etapas (pipeline híbrido):
  *   1. gemini-2.5-flash (visão): descreve o tecido em detalhes
- *   2. gemini-3.1-flash-image-preview (edição): gera preview com roupa trocada (para sombras/dobras)
- *   3. gemini-3.1-flash-image-preview (máscara): pinta a roupa de verde para segmentação
+ *   2. IMAGE_MODEL (edição): gera preview com roupa trocada (para sombras/dobras)
+ *   3. IMAGE_MODEL (máscara): pinta a roupa de verde para segmentação
  *   4. Sharp (texture-mapper): aplica a textura REAL sobre a foto original usando a máscara
  *      e as sombras extraídas do resultado da IA — padrão pixel-perfect
  *
@@ -15,12 +15,13 @@
 import fs from 'fs';
 import https from 'https';
 import sharp from 'sharp';
-import type { AIAdapter, TryOnParams, TryOnResult } from './adapter';
+import type { AIAdapter, TryOnParams, TryOnResult, MultiTryOnParams } from './adapter';
 import type { GarmentType } from '@/types';
 
 const GEMINI_HOST  = 'generativelanguage.googleapis.com';
 const VISION_MODEL = 'gemini-2.5-flash';
-const IMAGE_MODEL  = 'gemini-3.1-flash-image-preview';
+// Sobrescrevível por env para comparar/trocar modelos sem mexer no código
+const IMAGE_MODEL  = process.env.GEMINI_IMAGE_MODEL || 'gemini-nano-banana-2.1';
 
 const GARMENT_EN: Record<GarmentType, string> = {
   terno:  'a suit JACKET and TROUSERS ONLY (do NOT touch the shirt/undershirt underneath)',
@@ -28,7 +29,13 @@ const GARMENT_EN: Record<GarmentType, string> = {
   camisa: 'a dress shirt ONLY',
   polo:   'a polo shirt ONLY',
   calca:  'dress trousers ONLY',
+  sapato: 'the SHOES ONLY (do NOT touch the socks, trousers, or anything above the ankle)',
 };
+
+/** Sapatos são peças únicas (produto), não texturas repetíveis de tecido. */
+function isShoe(g: GarmentType): boolean {
+  return g === 'sapato';
+}
 
 export class GeminiAdapter implements AIAdapter {
   constructor(private apiKey: string) {}
@@ -38,8 +45,8 @@ export class GeminiAdapter implements AIAdapter {
     const fabricName = params.fabricName ?? 'selected fabric';
 
     // ── Etapa 1: descrever o tecido com foco em proporções ──
-    console.log('[Gemini] Etapa 1/3: descrevendo tecido...');
-    const fabricDescription = await this.describeFabric(fabricTexturePath, fabricName);
+    console.log('[Gemini] Etapa 1/3: descrevendo %s...', isShoe(garmentType) ? 'sapato' : 'tecido');
+    const fabricDescription = await this.describeFabric(fabricTexturePath, fabricName, garmentType);
 
     // ── Etapa 2: gerar preview inicial ──
     console.log('[Gemini] Etapa 2/3: gerando preview inicial...');
@@ -68,10 +75,193 @@ export class GeminiAdapter implements AIAdapter {
     return { resultImagePath: outputPath };
   }
 
-  /** Etapa 1 — usa gemini-2.5-flash para descrever o tecido com foco em proporções exatas */
-  private async describeFabric(fabricPath: string, fabricName: string): Promise<string> {
+  /**
+   * Aplica VÁRIAS peças numa única passada, SEMPRE a partir da foto base
+   * (original). Mesmo número de renders (edit + refine) independentemente
+   * da quantidade de peças — sem degradação acumulada nem zoom progressivo.
+   */
+  async generateMultiTryOn(params: MultiTryOnParams): Promise<TryOnResult> {
+    const { clientPhotoPath, garments, outputPath } = params;
+    if (garments.length === 0) throw new Error('Nenhuma peça para aplicar');
+
+    console.log('[Gemini] Multi 1/3: descrevendo %d tecido(s)...', garments.length);
+    const descriptions = await Promise.all(
+      garments.map((g) => this.describeFabric(g.fabricTexturePath, g.fabricName ?? 'selected fabric', g.garmentType)),
+    );
+
+    console.log('[Gemini] Multi 2/3: aplicando todas as peças em uma edição (a partir da foto original)...');
+    const firstPassB64 = await this.editClothingMulti(clientPhotoPath, garments, descriptions);
+
+    console.log('[Gemini] Multi 3/3: refinando padrões...');
+    const refinedB64 = await this.refineResultMulti(firstPassB64, garments);
+
+    const imageBuffer = Buffer.from(refinedB64, 'base64');
+    await sharp(imageBuffer).rotate().jpeg({ quality: 92 }).toFile(outputPath);
+    console.log('[Gemini] ✅ Look multi-peça salvo');
+    return { resultImagePath: outputPath };
+  }
+
+  /** Amplia a textura 2× (lanczos) e devolve base64 JPEG. */
+  private async upscaleFabricB64(fabricTexturePath: string): Promise<string> {
+    const fabricBuf = fs.readFileSync(fabricTexturePath);
+    const meta = await sharp(fabricBuf).metadata();
+    const upscaled = await sharp(fabricBuf)
+      .resize(Math.round((meta.width ?? 500) * 2), Math.round((meta.height ?? 500) * 2), {
+        kernel: sharp.kernel.lanczos3,
+      })
+      .jpeg({ quality: 95 })
+      .toBuffer();
+    return upscaled.toString('base64');
+  }
+
+  /** Edita todas as peças de uma vez (Image 1 = foto; Image 2..N = swatches). */
+  private async editClothingMulti(
+    clientPhotoPath: string,
+    garments: { fabricTexturePath: string; garmentType: GarmentType; fabricName?: string }[],
+    descriptions: string[],
+  ): Promise<string> {
+    const photoB64 = fs.readFileSync(clientPhotoPath).toString('base64');
+    const photoMime = guessMime(clientPhotoPath);
+    const swatches = await Promise.all(garments.map((g) => this.upscaleFabricB64(g.fabricTexturePath)));
+
+    const garmentLines = garments
+      .map((g, i) => isShoe(g.garmentType)
+        ? `- Image ${i + 2} is a PHOTO OF A SPECIFIC SHOE PRODUCT (a unique piece). Replace the person's footwear with THIS EXACT shoe — same type, silhouette, toe shape, color(s), material/finish, sole, closure and distinctive details. Do NOT treat it as a repeating fabric texture. Product analysis: ${descriptions[i]}`
+        : `- Image ${i + 2} is the fabric for ${GARMENT_EN[g.garmentType]}. Apply THIS fabric to THAT garment. Fabric analysis: ${descriptions[i]}`)
+      .join('\n');
+    const changedList = garments.map((g) => GARMENT_EN[g.garmentType]).join(' AND ');
+
+    const hasFabric = garments.some((g) => !isShoe(g.garmentType));
+    const hasShoe = garments.some((g) => isShoe(g.garmentType));
+
+    const fabricFidelity = hasFabric ? `
+ABSOLUTE PRIORITY — PATTERN FIDELITY (fabric garments):
+- The pattern lines in each swatch are EXTREMELY FINE — almost hair-thin, with lots of solid base color between them.
+- Make the lines on each garment EVEN THINNER than you think. The most common error is lines too thick — actively fight it.
+- Match the EXACT colors of each swatch (base color + line colors).` : '';
+    const shoeFidelity = hasShoe ? `
+ABSOLUTE PRIORITY — SHOE PRODUCTS (unique pieces):
+- Any shoe reference image is a SPECIFIC product, NOT a repeating texture. Reproduce the EXACT same shoe on the feet (type, color, material, toe shape, sole, closure, details), fitted naturally with correct perspective, ground contact and realistic shadows.` : '';
+    // Se um sapato ESTÁ sendo trocado, não peça para manter os sapatos originais.
+    const preserveList = hasShoe ? 'accessories' : 'shoes, accessories';
+
+    const prompt = `Edit this photo of a person (Image 1). Apply the following item(s), each from its OWN reference image: ${changedList}.
+
+ASSIGNMENTS (match each item to its own reference image):
+${garmentLines}
+${fabricFidelity}${shoeFidelity}
+
+ITEM RULES:
+- Each garment must look naturally tailored: realistic draping, folds, shadows, seams, buttons, lapels, pockets. Shoes must sit naturally on the feet with correct perspective and ground contact.
+
+PRESERVATION (DO NOT CHANGE):
+- Face, hair, skin tone, body shape, pose, hands — pixel-perfect identical.
+- Background, floor, ${preserveList} — completely unchanged.
+- Any garment NOT listed above stays EXACTLY as in the original (e.g., if only trousers and blazer change, the shirt underneath stays identical).
+
+CRITICAL — FRAMING, ZOOM AND DIMENSIONS (HIGHEST PRIORITY):
+- The output MUST have EXACTLY the same dimensions, aspect ratio, framing, crop, camera angle and ZOOM/DISTANCE as Image 1.
+- Do NOT zoom in, do NOT zoom out, do NOT re-crop, do NOT reframe. The person must appear at the EXACT same scale and position within the frame as Image 1.
+- Treat this as an in-place pixel edit — the head position, shoulders and body must align pixel-for-pixel with Image 1; every pixel outside the changed garments stays in its original location.`;
+
+    const parts = [
+      { inline_data: { mime_type: photoMime, data: photoB64 } },
+      ...swatches.map((s) => ({ inline_data: { mime_type: 'image/jpeg', data: s } })),
+      { text: prompt },
+    ];
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+    });
+    return this.callGeminiImage(IMAGE_MODEL, body);
+  }
+
+  /** Refina os padrões de todas as peças comparando com seus swatches. */
+  private async refineResultMulti(
+    firstPassB64: string,
+    garments: { fabricTexturePath: string; garmentType: GarmentType }[],
+  ): Promise<string> {
+    const swatches = await Promise.all(garments.map((g) => this.upscaleFabricB64(g.fabricTexturePath)));
+    const garmentLines = garments
+      .map((g, i) => isShoe(g.garmentType)
+        ? `- Image ${i + 2}: the ORIGINAL shoe product the footwear must match.`
+        : `- Image ${i + 2}: the ORIGINAL swatch for ${GARMENT_EN[g.garmentType]}.`)
+      .join('\n');
+
+    const hasFabric = garments.some((g) => !isShoe(g.garmentType));
+    const hasShoe = garments.some((g) => isShoe(g.garmentType));
+    const fabricErrors = hasFabric ? `
+FABRIC GARMENTS — fix:
+- Lines/stripes too thick → make thinner to match the swatch
+- Pattern too bold/saturated → make subtler
+- Wrong scale, spacing or colors → correct to match the swatch precisely` : '';
+    const shoeErrors = hasShoe ? `
+SHOES — fix:
+- Wrong color, material, finish or toe shape → correct to match the product
+- Invented or wrong closure, sole, stitching, hardware or logos → correct to match the product exactly
+- Left/right shoes inconsistent → make both match the same product` : '';
+
+    const prompt = `You are a quality inspector. Image 1 is an AI-generated photo of a person. The remaining images are the ORIGINAL references each item must match:
+${garmentLines}
+
+YOUR TASK: Refine Image 1 so each item EXACTLY matches its reference (fabric pattern for garments; the exact product for shoes).
+${fabricErrors}${shoeErrors}
+
+KEEP UNCHANGED:
+- The person (face, body, pose, hands, skin) — do not alter.
+- The background — identical.
+- Each item's SHAPE, fit, draping, folds, shadows — keep the realistic 3D look (do not move or resize the shoes).
+- Any item without a reference above stays exactly as-is.
+
+CRITICAL — FRAMING/ZOOM (HIGHEST PRIORITY):
+- Same dimensions, aspect ratio, framing, crop and ZOOM/DISTANCE as Image 1. Do NOT zoom or reframe. In-place pixel edit only — the person stays at the EXACT same scale and position.
+
+Output the corrected photo.`;
+
+    const parts = [
+      { inline_data: { mime_type: 'image/jpeg', data: firstPassB64 } },
+      ...swatches.map((s) => ({ inline_data: { mime_type: 'image/jpeg', data: s } })),
+      { text: prompt },
+    ];
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+    });
+    return this.callGeminiImage(IMAGE_MODEL, body);
+  }
+
+  /**
+   * Etapa 1 — descreve o item de referência com gemini-2.5-flash.
+   * Tecido → foco em padrão/proporções. Sapato → foco no produto (tipo, cor,
+   * material, forma, solado, fecho, detalhes), pois é uma peça única e não uma
+   * textura repetível.
+   */
+  private async describeFabric(fabricPath: string, fabricName: string, garmentType?: GarmentType): Promise<string> {
     const fabricB64 = fs.readFileSync(fabricPath).toString('base64');
     const mime      = guessMime(fabricPath);
+
+    if (garmentType && isShoe(garmentType)) {
+      const shoeBody = JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mime, data: fabricB64 } },
+            { text: `Analyze this SHOE PRODUCT photo with EXTREME PRECISION so the exact same shoe can be recreated on a person's feet. The shoe is called "${fabricName}".
+
+Describe EXACTLY:
+1. TYPE: (oxford, derby, loafer, monk strap, brogue, sneaker, boot, sandal, etc.)
+2. COLORS: exact color(s) of the upper, plus any contrast panels
+3. MATERIAL / FINISH: (smooth leather, suede, patent, canvas, nubuck…) and matte vs glossy
+4. TOE SHAPE: (round, almond, pointed, square, cap toe)
+5. CLOSURE: (laces, buckle/monk strap, slip-on, zipper, velcro) and number of eyelets if visible
+6. SOLE: color, type (leather/rubber), height/thickness, welt if visible
+7. DISTINCTIVE DETAILS: brogue perforations, stitching, hardware, buckles, logos, patterns
+
+This is a UNIQUE product — describe it factually and specifically so it can be reproduced identically, not approximated.` },
+          ],
+        }],
+      });
+      return this.callGeminiText(VISION_MODEL, shoeBody);
+    }
 
     const body = JSON.stringify({
       contents: [{
@@ -121,9 +311,27 @@ BE EXTREMELY SPECIFIC about how THIN or THICK the lines are. This is the most im
     console.log('[Gemini] Textura ampliada: %dx%d → %dx%d',
       meta.width, meta.height, Math.round((meta.width ?? 500) * 2), Math.round((meta.height ?? 500) * 2));
 
-    // Prompt com over-correction: pedir linhas MAIS FINAS que o natural
-    // (a IA tende a engrossar, então pedimos extra-fino para compensar)
-    const prompt = `Edit this photo of a person. Change ONLY their ${garment} to be custom tailored from the EXACT fabric shown in the second image.
+    // Sapato = peça única (produto): substitui o calçado pelo modelo exato,
+    // sem tratar a imagem como textura repetível.
+    const prompt = isShoe(garmentType) ? `Edit this photo of a person. Replace ONLY their footwear with the EXACT shoe product shown in the second image. Everything above the ankle stays untouched.
+
+SHOE PLACEMENT — PRODUCT FIDELITY (ABSOLUTE PRIORITY):
+- The second image is a SPECIFIC shoe product (a unique piece), NOT a fabric texture. Do NOT tile, repeat, or use it as a pattern.
+- Recreate the SAME shoe on the person's feet: same type, silhouette, toe shape, color(s), material/finish, sole, closure and every distinctive detail.
+- Fit BOTH shoes naturally to the feet and the pose — correct perspective, size, ground contact and realistic shadows.
+- Show only what the framing allows (if the feet are cropped, do not invent them).
+
+Detailed product analysis: ${fabricDescription}
+
+PRESERVATION (DO NOT CHANGE):
+- Face, hair, skin, body shape, pose, hands — pixel-perfect identical.
+- ALL clothing above the ankle (socks, trousers, everything) stays EXACTLY as in the original.
+- Background, floor, accessories — unchanged, except where the new shoes naturally rest.
+
+CRITICAL — FRAMING AND DIMENSIONS (HIGHEST PRIORITY):
+- The output image MUST have EXACTLY the same dimensions, aspect ratio, framing, crop, and camera angle as the input photo.
+- Do NOT zoom in, do NOT zoom out, do NOT re-crop, do NOT reframe. The person must appear at the EXACT same scale and position.
+- Treat this as an in-place pixel edit — every pixel outside the shoes stays in its original location.` : `Edit this photo of a person. Change ONLY their ${garment} to be custom tailored from the EXACT fabric shown in the second image.
 
 ABSOLUTE PRIORITY — PATTERN FIDELITY:
 Look very carefully at the fabric swatch (second image). Notice how THIN and DELICATE the pattern lines are.
@@ -192,7 +400,29 @@ CRITICAL — FRAMING AND DIMENSIONS (HIGHEST PRIORITY):
       .toBuffer();
     const fabricB64 = upscaled.toString('base64');
 
-    const prompt = `You are a fabric pattern quality inspector. Compare these two images:
+    const prompt = isShoe(garmentType) ? `You are a footwear quality inspector. Compare these two images:
+
+IMAGE 1: An AI-generated photo of a person. Look at the SHOES.
+IMAGE 2: The ORIGINAL shoe product the footwear must match.
+
+YOUR TASK: Refine the shoes in Image 1 so they EXACTLY match the product in Image 2.
+
+COMMON ERRORS TO FIX:
+- Wrong color, material or finish → correct to match the product
+- Wrong toe shape or silhouette → reshape to match
+- Wrong or invented closure, sole, stitching, hardware or logos → correct to match the product exactly
+- Left/right shoes inconsistent with each other → make both match the same product
+
+WHAT TO KEEP UNCHANGED:
+- The person (face, body, pose, hands, skin) — do not alter.
+- ALL clothing above the ankle (socks, trousers) and the background — identical.
+- The shoes' natural fit, perspective, ground contact and realistic shadows — keep the 3D look.
+- Only refine the shoe APPEARANCE to match the product; do not move or resize them.
+
+CRITICAL — FRAMING AND DIMENSIONS (HIGHEST PRIORITY):
+- Same dimensions, aspect ratio, framing and crop as Image 1. Do NOT zoom or reframe. In-place pixel edit only — the person stays at the EXACT same scale and position.
+
+Output the corrected photo.` : `You are a fabric pattern quality inspector. Compare these two images:
 
 IMAGE 1: A photo of a person wearing ${garment}. This was generated by AI.
 IMAGE 2: The ORIGINAL fabric swatch that the garment should match.

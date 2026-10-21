@@ -4,22 +4,25 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import type { Fabric } from '@/types';
+import type { Fabric, FabricKind } from '@/types';
 import { Plus, ArrowLeft, Trash2, FolderPlus, Tags } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminFabricsPage() {
   const router = useRouter();
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
+  const [kind, setKind] = useState<FabricKind>('fabric');
   const [loading, setLoading] = useState(true);
+  const isShoe = kind === 'shoe';
 
   useEffect(() => {
     loadFabrics();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
 
   async function loadFabrics() {
     setLoading(true);
-    const res = await fetch('/api/fabrics?all=true');
+    const res = await fetch(`/api/fabrics?all=true&kind=${kind}`);
     const data = await res.json();
     setFabrics(data);
     setLoading(false);
@@ -35,14 +38,15 @@ export default function AdminFabricsPage() {
     setFabrics((prev) =>
       prev.map((f) => (f.id === fabric.id ? { ...f, is_active: newVal } : f))
     );
-    toast.success(newVal ? 'Tecido ativado' : 'Tecido desativado');
+    const label = isShoe ? 'Sapato' : 'Tecido';
+    toast.success(newVal ? `${label} ativado` : `${label} desativado`);
   }
 
   async function deleteFabric(fabric: Fabric) {
     if (!confirm(`Excluir "${fabric.name}"? Esta ação não pode ser desfeita.`)) return;
     await fetch(`/api/fabrics/${fabric.id}`, { method: 'DELETE' });
     setFabrics((prev) => prev.filter((f) => f.id !== fabric.id));
-    toast.success('Tecido excluído');
+    toast.success(isShoe ? 'Sapato excluído' : 'Tecido excluído');
   }
 
   return (
@@ -59,42 +63,70 @@ export default function AdminFabricsPage() {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-foreground text-sm truncate"
             style={{ fontFamily: 'var(--font-syne)' }}>
-            Catálogo de Tecidos
+            {isShoe ? 'Catálogo de Sapatos' : 'Catálogo de Tecidos'}
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {fabrics.length} tecido{fabrics.length !== 1 ? 's' : ''} cadastrado{fabrics.length !== 1 ? 's' : ''}
+            {isShoe
+              ? `${fabrics.length} sapato${fabrics.length !== 1 ? 's' : ''} cadastrado${fabrics.length !== 1 ? 's' : ''}`
+              : `${fabrics.length} tecido${fabrics.length !== 1 ? 's' : ''} cadastrado${fabrics.length !== 1 ? 's' : ''}`}
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {!isShoe && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push('/admin/categories')}
+                className="gap-1.5 border-border text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-8 px-3"
+              >
+                <Tags className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Categorias</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push('/admin/collections/new')}
+                className="gap-1.5 border-border text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-8 px-3"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Nova coleção</span>
+              </Button>
+            </>
+          )}
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => router.push('/admin/categories')}
-            className="gap-1.5 border-border text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-8 px-3"
-          >
-            <Tags className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Categorias</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push('/admin/collections/new')}
-            className="gap-1.5 border-border text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-8 px-3"
-          >
-            <FolderPlus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Nova coleção</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => router.push('/admin/fabrics/new')}
+            onClick={() => router.push(`/admin/fabrics/new${isShoe ? '?kind=shoe' : ''}`)}
             className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8 px-3"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Tecido avulso</span>
+            <span className="hidden sm:inline">{isShoe ? 'Sapato avulso' : 'Tecido avulso'}</span>
           </Button>
         </div>
       </header>
+
+      {/* Abas: Tecidos × Sapatos (peças únicas) */}
+      <div className="bg-card border-b border-border px-4 flex gap-1">
+        {([
+          { k: 'fabric' as FabricKind, label: 'Tecidos', icon: '🧵' },
+          { k: 'shoe' as FabricKind, label: 'Sapatos', icon: '👞' },
+        ]).map((t) => (
+          <button
+            key={t.k}
+            onClick={() => setKind(t.k)}
+            className={
+              'flex items-center gap-1.5 text-xs px-3 py-2.5 -mb-px border-b-2 transition-colors ' +
+              (kind === t.k
+                ? 'border-primary text-primary font-medium'
+                : 'border-transparent text-muted-foreground hover:text-foreground')
+            }
+          >
+            <span>{t.icon}</span>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       <div className="flex-1 p-4 md:p-6">
         {loading ? (
@@ -103,27 +135,31 @@ export default function AdminFabricsPage() {
           </div>
         ) : fabrics.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4">🧵</p>
+            <p className="text-5xl mb-4">{isShoe ? '👞' : '🧵'}</p>
             <p className="font-semibold text-foreground text-lg mb-2"
               style={{ fontFamily: 'var(--font-syne)' }}>
-              Nenhum tecido cadastrado
+              {isShoe ? 'Nenhum sapato cadastrado' : 'Nenhum tecido cadastrado'}
             </p>
-            <p className="text-muted-foreground text-sm mb-6">Cadastre tecidos para aparecerem no catálogo</p>
+            <p className="text-muted-foreground text-sm mb-6">
+              {isShoe ? 'Cadastre sapatos para aparecerem no catálogo' : 'Cadastre tecidos para aparecerem no catálogo'}
+            </p>
             <div className="flex gap-3 justify-center">
+              {!isShoe && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/admin/collections/new')}
+                  className="gap-2 border-border text-muted-foreground hover:text-foreground"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  Nova coleção
+                </Button>
+              )}
               <Button
-                variant="outline"
-                onClick={() => router.push('/admin/collections/new')}
-                className="gap-2 border-border text-muted-foreground hover:text-foreground"
-              >
-                <FolderPlus className="w-4 h-4" />
-                Nova coleção
-              </Button>
-              <Button
-                onClick={() => router.push('/admin/fabrics/new')}
+                onClick={() => router.push(`/admin/fabrics/new${isShoe ? '?kind=shoe' : ''}`)}
                 className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus className="w-4 h-4" />
-                Tecido avulso
+                {isShoe ? 'Sapato avulso' : 'Tecido avulso'}
               </Button>
             </div>
           </div>
@@ -134,13 +170,17 @@ export default function AdminFabricsPage() {
                 <thead className="bg-background border-b border-border">
                   <tr>
                     <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
-                      style={{ fontFamily: 'var(--font-syne)' }}>Tecido</th>
+                      style={{ fontFamily: 'var(--font-syne)' }}>{isShoe ? 'Sapato' : 'Tecido'}</th>
                     <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
                       style={{ fontFamily: 'var(--font-syne)' }}>Código</th>
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell"
-                      style={{ fontFamily: 'var(--font-syne)' }}>Categoria</th>
-                    <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden lg:table-cell"
-                      style={{ fontFamily: 'var(--font-syne)' }}>Coleção</th>
+                    {!isShoe && (
+                      <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell"
+                        style={{ fontFamily: 'var(--font-syne)' }}>Categoria</th>
+                    )}
+                    {!isShoe && (
+                      <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden lg:table-cell"
+                        style={{ fontFamily: 'var(--font-syne)' }}>Coleção</th>
+                    )}
                     <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell"
                       style={{ fontFamily: 'var(--font-syne)' }}>Usos</th>
                     <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3"
@@ -166,18 +206,22 @@ export default function AdminFabricsPage() {
                           {fabric.code}
                         </span>
                       </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        {fabric.category ? (
-                          <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
-                            {fabric.category}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-muted-foreground text-sm">{fabric.collection || '—'}</span>
-                      </td>
+                      {!isShoe && (
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {fabric.category ? (
+                            <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
+                              {fabric.category}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+                      )}
+                      {!isShoe && (
+                        <td className="px-4 py-3 hidden lg:table-cell">
+                          <span className="text-muted-foreground text-sm">{fabric.collection || '—'}</span>
+                        </td>
+                      )}
                       <td className="px-4 py-3 hidden md:table-cell">
                         <span className="text-muted-foreground text-sm">{fabric.usage_count}</span>
                       </td>

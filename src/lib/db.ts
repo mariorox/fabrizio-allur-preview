@@ -1,13 +1,13 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import type { Session, Fabric, Generation, GarmentType } from '@/types';
+import type { Session, Fabric, FabricKind, Generation, GarmentType, OutfitItem } from '@/types';
 
 const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
   : path.resolve(process.cwd(), 'data');
 
-const DB_PATH = path.join(DATA_DIR, 'fabrizio.db');
+const DB_PATH = path.join(DATA_DIR, 'provador.db');
 
 // Ensure data dir exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -28,6 +28,22 @@ function getDb(): Database.Database {
 
 function initSchema(db: Database.Database) {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS ateliers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      city TEXT,
+      neighborhood TEXT,
+      tagline TEXT,
+      bio TEXT,
+      specialty TEXT,
+      avatar_image TEXT,
+      cover_image TEXT,
+      is_active INTEGER DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       client_name TEXT,
@@ -70,6 +86,16 @@ function initSchema(db: Database.Database) {
     );
   `);
 
+  // Migração aditiva — provador acumulativo / multi-peça
+  migrateGenerations(db);
+
+  // Migração aditiva — marketplace multi-ateliê
+  addColumnIfMissing(db, 'fabrics', 'atelier_id', 'TEXT');
+  addColumnIfMissing(db, 'sessions', 'atelier_id', 'TEXT');
+
+  // Migração aditiva — sapatos como peças únicas (produto) vs tecidos (textura)
+  addColumnIfMissing(db, 'fabrics', 'kind', "TEXT DEFAULT 'fabric'");
+
   // Seed categorias padrão se tabela vazia
   const catCount = (db.prepare('SELECT COUNT(*) as n FROM fabric_categories').get() as { n: number }).n;
   if (catCount === 0) {
@@ -79,18 +105,124 @@ function initSchema(db: Database.Database) {
   }
 }
 
+/** Adiciona colunas novas em `generations` sem quebrar dados existentes. */
+function migrateGenerations(db: Database.Database) {
+  const cols = (db.prepare(`PRAGMA table_info(generations)`).all() as { name: string }[]).map((c) => c.name);
+  const additions: Record<string, string> = {
+    items_json: 'TEXT',
+    base_image: 'TEXT',
+    base_generation_id: 'TEXT',
+  };
+  for (const [name, type] of Object.entries(additions)) {
+    if (!cols.includes(name)) {
+      db.exec(`ALTER TABLE generations ADD COLUMN ${name} ${type}`);
+    }
+  }
+}
+
+/** Adiciona uma coluna a uma tabela se ela ainda não existir. */
+function addColumnIfMissing(db: Database.Database, table: string, column: string, type: string) {
+  const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes(column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
+}
+
+// ── Ateliers (marketplace) ─────────────────────────────────────────────────────
+
+export interface Atelier {
+  id: string;
+  name: string;
+  slug: string;
+  city: string | null;
+  neighborhood: string | null;
+  tagline: string | null;
+  bio: string | null;
+  specialty: string | null;
+  avatar_image: string | null;
+  cover_image: string | null;
+  is_active: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface AtelierWithStats extends Atelier {
+  fabric_count: number;
+}
+
+export function createAtelier(data: {
+  id: string;
+  name: string;
+  slug: string;
+  city?: string;
+  neighborhood?: string;
+  tagline?: string;
+  bio?: string;
+  specialty?: string;
+  avatar_image?: string;
+  cover_image?: string;
+  sort_order?: number;
+}): Atelier {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO ateliers (id, name, slug, city, neighborhood, tagline, bio, specialty, avatar_image, cover_image, sort_order)
+    VALUES (@id, @name, @slug, @city, @neighborhood, @tagline, @bio, @specialty, @avatar_image, @cover_image, @sort_order)
+  `).run({
+    id: data.id,
+    name: data.name,
+    slug: data.slug,
+    city: data.city ?? null,
+    neighborhood: data.neighborhood ?? null,
+    tagline: data.tagline ?? null,
+    bio: data.bio ?? null,
+    specialty: data.specialty ?? null,
+    avatar_image: data.avatar_image ?? null,
+    cover_image: data.cover_image ?? null,
+    sort_order: data.sort_order ?? 0,
+  });
+  return getAtelier(data.id)!;
+}
+
+export function getAtelier(id: string): Atelier | null {
+  const db = getDb();
+  return db.prepare('SELECT * FROM ateliers WHERE id = ?').get(id) as Atelier | null;
+}
+
+export function getAtelierBySlug(slug: string): Atelier | null {
+  const db = getDb();
+  return db.prepare('SELECT * FROM ateliers WHERE slug = ?').get(slug) as Atelier | null;
+}
+
+export function listAteliers(): AtelierWithStats[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT a.*, COUNT(f.id) AS fabric_count
+    FROM ateliers a
+    LEFT JOIN fabrics f ON f.atelier_id = a.id AND f.is_active = 1 AND (f.kind = 'fabric' OR f.kind IS NULL)
+    WHERE a.is_active = 1
+    GROUP BY a.id
+    ORDER BY a.sort_order, a.name
+  `).all() as AtelierWithStats[];
+}
+
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
 export function createSession(data: {
   id: string;
   client_name?: string;
   notes?: string;
+  atelier_id?: string;
 }): Session {
   const db = getDb();
   db.prepare(`
-    INSERT INTO sessions (id, client_name, notes)
-    VALUES (@id, @client_name, @notes)
-  `).run({ id: data.id, client_name: data.client_name ?? null, notes: data.notes ?? null });
+    INSERT INTO sessions (id, client_name, notes, atelier_id)
+    VALUES (@id, @client_name, @notes, @atelier_id)
+  `).run({
+    id: data.id,
+    client_name: data.client_name ?? null,
+    notes: data.notes ?? null,
+    atelier_id: data.atelier_id ?? null,
+  });
   return getSession(data.id)!;
 }
 
@@ -169,11 +301,13 @@ export function createFabric(data: {
   category?: string;
   collection?: string;
   texture_image: string;
+  atelier_id?: string;
+  kind?: FabricKind;
 }): Fabric {
   const db = getDb();
   db.prepare(`
-    INSERT INTO fabrics (id, name, code, category, collection, texture_image)
-    VALUES (@id, @name, @code, @category, @collection, @texture_image)
+    INSERT INTO fabrics (id, name, code, category, collection, texture_image, atelier_id, kind)
+    VALUES (@id, @name, @code, @category, @collection, @texture_image, @atelier_id, @kind)
   `).run({
     id: data.id,
     name: data.name,
@@ -181,6 +315,8 @@ export function createFabric(data: {
     category: data.category ?? null,
     collection: data.collection ?? null,
     texture_image: data.texture_image,
+    atelier_id: data.atelier_id ?? null,
+    kind: data.kind ?? 'fabric',
   });
   return getFabric(data.id)!;
 }
@@ -195,6 +331,8 @@ export function listFabrics(opts: {
   category?: string;
   collection?: string;
   activeOnly?: boolean;
+  atelierId?: string;
+  kind?: FabricKind;
 } = {}): Fabric[] {
   const db = getDb();
   const conditions: string[] = [];
@@ -202,6 +340,19 @@ export function listFabrics(opts: {
 
   if (opts.activeOnly !== false) {
     conditions.push('is_active = 1');
+  }
+  if (opts.kind) {
+    // Linhas antigas têm kind NULL — tratadas como 'fabric' (tecido).
+    if (opts.kind === 'fabric') {
+      conditions.push("(kind = 'fabric' OR kind IS NULL)");
+    } else {
+      conditions.push('kind = @kind');
+      params.kind = opts.kind;
+    }
+  }
+  if (opts.atelierId) {
+    conditions.push('atelier_id = @atelierId');
+    params.atelierId = opts.atelierId;
   }
   if (opts.search) {
     conditions.push('(name LIKE @search OR code LIKE @search)');
@@ -286,26 +437,73 @@ export function deleteFabricCategory(id: number) {
 export function createGeneration(data: {
   id: string;
   session_id: string;
-  fabric_id: string;
-  garment_type: GarmentType;
-  client_photo: string;
+  base_image: string;                 // foto original OU prévia anterior
+  items: { garment_type: GarmentType; fabric_id: string }[];
+  base_generation_id?: string | null;
 }): Generation {
   const db = getDb();
+
+  // Denormaliza cada item com o snapshot do tecido (nome/código/textura)
+  const items: OutfitItem[] = data.items.map((it) => {
+    const f = getFabric(it.fabric_id);
+    return {
+      garment_type: it.garment_type,
+      fabric_id: it.fabric_id,
+      fabric_name: f?.name,
+      fabric_code: f?.code,
+      fabric_texture: f?.texture_image,
+    };
+  });
+  const first = items[0];
+
   db.prepare(`
-    INSERT INTO generations (id, session_id, fabric_id, garment_type, client_photo)
-    VALUES (@id, @session_id, @fabric_id, @garment_type, @client_photo)
-  `).run(data);
+    INSERT INTO generations
+      (id, session_id, fabric_id, garment_type, client_photo, base_image, base_generation_id, items_json)
+    VALUES
+      (@id, @session_id, @fabric_id, @garment_type, @client_photo, @base_image, @base_generation_id, @items_json)
+  `).run({
+    id: data.id,
+    session_id: data.session_id,
+    fabric_id: first.fabric_id,
+    garment_type: first.garment_type,
+    client_photo: data.base_image,
+    base_image: data.base_image,
+    base_generation_id: data.base_generation_id ?? null,
+    items_json: JSON.stringify(items),
+  });
   return getGeneration(data.id)!;
+}
+
+/** Reconstrói `items` a partir de items_json (ou do par fabric/garment legado). */
+function hydrateGeneration(row: (Generation & { items_json?: string | null }) | undefined): Generation | null {
+  if (!row) return null;
+  let items: OutfitItem[] = [];
+  if (row.items_json) {
+    try { items = JSON.parse(row.items_json) as OutfitItem[]; } catch { items = []; }
+  }
+  if (items.length === 0) {
+    // Linha legada — deriva um único item das colunas existentes
+    items = [{
+      garment_type: row.garment_type,
+      fabric_id: row.fabric_id,
+      fabric_name: row.fabric_name,
+      fabric_code: row.fabric_code,
+      fabric_texture: row.fabric_texture,
+    }];
+  }
+  delete row.items_json;
+  return { ...row, base_image: row.base_image ?? row.client_photo, items };
 }
 
 export function getGeneration(id: string): Generation | null {
   const db = getDb();
-  return db.prepare(`
+  const row = db.prepare(`
     SELECT g.*, f.name as fabric_name, f.code as fabric_code, f.texture_image as fabric_texture
     FROM generations g
     LEFT JOIN fabrics f ON f.id = g.fabric_id
     WHERE g.id = ?
-  `).get(id) as Generation | null;
+  `).get(id) as (Generation & { items_json?: string | null }) | undefined;
+  return hydrateGeneration(row);
 }
 
 export function updateGeneration(id: string, data: {
@@ -321,13 +519,14 @@ export function updateGeneration(id: string, data: {
 
 export function listSessionGenerations(sessionId: string): Generation[] {
   const db = getDb();
-  return db.prepare(`
+  const rows = db.prepare(`
     SELECT g.*, f.name as fabric_name, f.code as fabric_code, f.texture_image as fabric_texture
     FROM generations g
     LEFT JOIN fabrics f ON f.id = g.fabric_id
     WHERE g.session_id = ?
     ORDER BY g.created_at DESC
-  `).all(sessionId) as Generation[];
+  `).all(sessionId) as (Generation & { items_json?: string | null })[];
+  return rows.map((r) => hydrateGeneration(r)!);
 }
 
 export function deleteGeneration(id: string) {

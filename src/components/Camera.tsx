@@ -12,6 +12,7 @@ const GARMENT_HINTS: Record<GarmentType, string> = {
   camisa: 'Enquadre da cabeça até a cintura. Fundo neutro.',
   polo: 'Enquadre da cabeça até a cintura. Fundo neutro.',
   calca: 'Enquadre o corpo inteiro. Fundo neutro.',
+  sapato: 'Enquadre os pés/calçados. Boa luz, fundo neutro.',
 };
 
 interface CameraProps {
@@ -135,19 +136,19 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
     <div className={cn('flex flex-col gap-4', className)}>
 
       {/* Hint */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex gap-2 items-start text-sm text-amber-800">
+      <div className="bg-card border border-border rounded-2xl px-4 py-3 flex gap-2 items-start text-sm text-muted-foreground">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
         <span>{GARMENT_HINTS[garmentType]}</span>
       </div>
 
       {/* Mode tabs — esconde a aba Câmera se bloqueada por HTTP */}
       {!cameraBlocked && (
-        <div className="flex rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800">
+        <div className="flex rounded-full overflow-hidden border border-border bg-secondary p-1">
           <button
             onClick={() => switchMode('camera')}
             className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors',
-              mode === 'camera' ? 'bg-white text-zinc-900' : 'text-white/75 hover:text-white',
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-medium transition-colors',
+              mode === 'camera' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <Camera className="w-4 h-4" />
@@ -156,8 +157,8 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
           <button
             onClick={() => switchMode('upload')}
             className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors',
-              mode === 'upload' ? 'bg-white text-zinc-900' : 'text-white/75 hover:text-white',
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-medium transition-colors',
+              mode === 'upload' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <ImageIcon className="w-4 h-4" />
@@ -167,7 +168,7 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
       )}
 
       {/* Viewport */}
-      <div className="relative rounded-2xl overflow-hidden bg-zinc-900 aspect-[3/4] max-h-[60vh] w-full">
+      <div className="relative rounded-2xl overflow-hidden bg-neutral-900 aspect-[3/4] max-h-[60vh] w-full">
 
         {phase === 'preview' ? (
           <img
@@ -250,7 +251,7 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
       <div className="flex gap-3 justify-center">
         {phase === 'preview' ? (
           <>
-            <Button variant="outline" size="lg" onClick={retake} className="gap-2 rounded-full border-zinc-600 text-zinc-200 hover:bg-zinc-800">
+            <Button variant="outline" size="lg" onClick={retake} className="gap-2">
               <RotateCcw className="w-4 h-4" />
               {mode === 'camera' ? 'Refazer' : 'Trocar'}
             </Button>

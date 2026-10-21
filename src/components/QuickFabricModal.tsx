@@ -8,15 +8,19 @@ import { Label } from '@/components/ui/label';
 import { X, Upload, ImageIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import type { Fabric } from '@/types';
+import type { Fabric, FabricKind } from '@/types';
 
 interface QuickFabricModalProps {
   open: boolean;
   onClose: () => void;
   onCreated: (fabric: Fabric) => void;
+  atelierId?: string | null;
+  /** 'fabric' = tecido · 'shoe' = sapato (peça única). */
+  kind?: FabricKind;
 }
 
-export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalProps) {
+export function QuickFabricModal({ open, onClose, onCreated, atelierId, kind = 'fabric' }: QuickFabricModalProps) {
+  const isShoe = kind === 'shoe';
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -27,13 +31,13 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !isShoe) {
       fetch('/api/fabric-categories')
         .then((r) => r.json())
         .then((data) => { if (Array.isArray(data)) setCategories(data.map((c: { name: string }) => c.name)); })
         .catch(() => {});
     }
-  }, [open]);
+  }, [open, isShoe]);
 
   function reset() {
     setName('');
@@ -70,7 +74,9 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
       const form = new FormData();
       form.append('name', name.trim());
       form.append('code', code.trim().toUpperCase());
-      form.append('category', category);
+      form.append('category', isShoe ? '' : category);
+      form.append('kind', kind);
+      if (atelierId) form.append('atelier_id', atelierId);
       form.append('texture', file);
 
       const res = await fetch('/api/fabrics', { method: 'POST', body: form });
@@ -79,7 +85,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
         throw new Error(err.error || 'Erro ao cadastrar');
       }
       const fabric: Fabric = await res.json();
-      toast.success('Tecido cadastrado!');
+      toast.success(isShoe ? 'Sapato cadastrado!' : 'Tecido cadastrado!');
       onCreated(fabric);
       handleClose();
     } catch (err) {
@@ -100,7 +106,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <p className="text-sm font-semibold text-foreground"
             style={{ fontFamily: 'var(--font-syne)' }}>
-            Cadastro rápido de tecido
+            {isShoe ? 'Cadastro rápido de sapato' : 'Cadastro rápido de tecido'}
           </p>
           <button onClick={handleClose}
             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent">
@@ -126,7 +132,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
             ) : (
               <div className="h-28 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                 <ImageIcon className="w-8 h-8 opacity-30" />
-                <p className="text-xs">Foto da textura *</p>
+                <p className="text-xs">{isShoe ? 'Foto do sapato *' : 'Foto da textura *'}</p>
               </div>
             )}
           </div>
@@ -137,7 +143,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
             <div className="space-y-1.5">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Nome *</Label>
               <Input
-                placeholder="Ex: Super 120"
+                placeholder={isShoe ? 'Ex: Oxford Preto' : 'Ex: Super 120'}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="bg-background border-border focus:border-primary/50 text-sm h-9"
@@ -146,7 +152,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
             <div className="space-y-1.5">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Código *</Label>
               <Input
-                placeholder="Ex: FAB-001"
+                placeholder={isShoe ? 'Ex: SAP-001' : 'Ex: FAB-001'}
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 className="font-mono bg-background border-border focus:border-primary/50 text-sm h-9"
@@ -154,7 +160,8 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
             </div>
           </div>
 
-          {/* Categoria */}
+          {/* Categoria — só para tecidos */}
+          {!isShoe && (
           <div className="space-y-1.5">
             <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Categoria</Label>
             <select
@@ -168,6 +175,7 @@ export function QuickFabricModal({ open, onClose, onCreated }: QuickFabricModalP
               ))}
             </select>
           </div>
+          )}
 
           {/* Botões */}
           <div className="flex gap-3 pt-1">

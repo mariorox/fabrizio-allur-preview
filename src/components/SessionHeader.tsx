@@ -26,13 +26,12 @@ export function SessionHeader({ session, currentFabric, photoCount }: SessionHea
     session.current_garment === 'polo' ? '👕' : '👖';
 
   return (
-    <div className="bg-card border-b border-border px-4 py-3 flex items-center gap-4 flex-wrap">
+    <div className="border-t border-white/50 px-4 py-3 flex items-center gap-4 flex-wrap">
 
       {/* Client info */}
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20
-                        flex items-center justify-center shrink-0 text-xs font-bold text-primary"
-          style={{ fontFamily: 'var(--font-syne)' }}>
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20
+                        flex items-center justify-center shrink-0 text-xs font-bold text-primary">
           {session.client_name ? session.client_name[0].toUpperCase() : '?'}
         </div>
         <div className="min-w-0">

@@ -26,6 +26,7 @@ const GARMENT_DESC: Record<GarmentType, string> = {
   camisa: 'a dress shirt',
   polo:   'a polo shirt',
   calca:  'dress trousers',
+  sapato: 'a pair of dress shoes',
 };
 
 export class HuggingFaceAdapter implements AIAdapter {

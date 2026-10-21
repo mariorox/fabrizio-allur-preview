@@ -6,7 +6,7 @@
  */
 import sharp from 'sharp';
 import fs from 'fs';
-import type { AIAdapter, TryOnParams, TryOnResult } from './adapter';
+import type { AIAdapter, TryOnParams, TryOnResult, MultiTryOnParams } from './adapter';
 import type { GarmentType } from '@/types';
 
 // Proportion of image height where clothing starts / ends
@@ -16,6 +16,7 @@ const CLOTHING_TOP: Record<GarmentType, number> = {
   camisa: 0.22,
   polo:   0.22,
   calca:  0.50,
+  sapato: 0.93,
 };
 const CLOTHING_BOTTOM: Record<GarmentType, number> = {
   terno:  0.92,
@@ -23,6 +24,7 @@ const CLOTHING_BOTTOM: Record<GarmentType, number> = {
   camisa: 0.65,
   polo:   0.62,
   calca:  0.95,
+  sapato: 0.99,
 };
 
 const GARMENT_LABEL: Record<GarmentType, string> = {
@@ -31,6 +33,7 @@ const GARMENT_LABEL: Record<GarmentType, string> = {
   camisa: 'CAMISA',
   polo: 'POLO',
   calca: 'CALÇA',
+  sapato: 'SAPATO',
 };
 
 export class MockAdapter implements AIAdapter {
@@ -99,6 +102,48 @@ export class MockAdapter implements AIAdapter {
       .jpeg({ quality: 88 })
       .toBuffer();
 
+    fs.writeFileSync(outputPath, result);
+    return { resultImagePath: outputPath };
+  }
+
+  /** Aplica todas as peças (zonas) sobre a foto ORIGINAL numa só composição. */
+  async generateMultiTryOn(params: MultiTryOnParams): Promise<TryOnResult> {
+    const { clientPhotoPath, garments, outputPath } = params;
+    await new Promise((r) => setTimeout(r, 1500 + Math.random() * 1500));
+
+    const clientImage = sharp(clientPhotoPath);
+    const { width = 512, height = 768 } = await clientImage.metadata();
+
+    const overlays: sharp.OverlayOptions[] = [];
+    for (const g of garments) {
+      const topY = Math.round(height * CLOTHING_TOP[g.garmentType]);
+      const bottomY = Math.round(height * CLOTHING_BOTTOM[g.garmentType]);
+      const zoneH = bottomY - topY;
+
+      const { data: rawFabric, info: fabInfo } = await sharp(g.fabricTexturePath)
+        .resize(width, zoneH, { fit: 'cover' })
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      for (let i = 3; i < rawFabric.length; i += 4) rawFabric[i] = Math.round(rawFabric[i] * 0.55);
+
+      const fabricOverlay = await sharp(Buffer.from(rawFabric), {
+        raw: { width: fabInfo.width, height: fabInfo.height, channels: 4 },
+      }).png().toBuffer();
+
+      overlays.push({ input: fabricOverlay, top: topY, left: 0, blend: 'over' });
+    }
+
+    const labelSvg = Buffer.from(`
+      <svg width="${width}" height="48" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${width}" height="48" fill="rgba(10,10,10,0.75)"/>
+        <text x="12" y="30" font-family="Arial" font-size="15" fill="white" font-weight="bold">
+          SIMULAÇÃO — ${garments.map((g) => GARMENT_LABEL[g.garmentType]).join(' + ')}
+        </text>
+      </svg>`);
+    overlays.push({ input: labelSvg, top: height - 48, left: 0 });
+
+    const result = await clientImage.clone().composite(overlays).jpeg({ quality: 88 }).toBuffer();
     fs.writeFileSync(outputPath, result);
     return { resultImagePath: outputPath };
   }

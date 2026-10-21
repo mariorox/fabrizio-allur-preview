@@ -36,6 +36,10 @@ yarn-error.log*
 # local data (sqlite + uploads) — não subir pro git
 /data
 
+# túnel/servidor local (binário de 54 MB e logs)
+cloudflared.exe
+*.log
+
 # vercel
 .vercel
 

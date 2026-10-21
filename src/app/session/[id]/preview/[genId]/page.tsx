@@ -3,11 +3,12 @@
 import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import type { Generation, Session } from '@/types';
+import { AtelierBrand } from '@/components/AtelierBrand';
+import type { Generation, Session, Atelier } from '@/types';
 import { GARMENT_LABELS } from '@/types';
 import {
   ArrowLeft, RefreshCw, Shirt, BarChart2,
-  Download, Share2, RotateCcw, AlertCircle, Trash2
+  Download, Share2, RotateCcw, AlertCircle, Trash2, Layers
 } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ export default function PreviewPage({ params }: Props) {
 
   const [generation, setGeneration] = useState<Generation | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [atelier, setAtelier] = useState<Atelier | null>(null);
   const [polling, setPolling] = useState(true);
 
   /* ── Progresso simulado ── */
@@ -38,7 +40,18 @@ export default function PreviewPage({ params }: Props) {
 
   useEffect(() => {
     loadGeneration();
-    fetch(`/api/sessions/${sessionId}`).then((r) => r.json()).then(setSession).catch(() => {});
+    fetch(`/api/sessions/${sessionId}`)
+      .then((r) => r.json())
+      .then((s: Session) => {
+        setSession(s);
+        if (s.atelier_id) {
+          fetch(`/api/ateliers?id=${s.atelier_id}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((a) => a && setAtelier(a))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
   }, [sessionId, loadGeneration]);
 
   useEffect(() => {
@@ -91,7 +104,7 @@ export default function PreviewPage({ params }: Props) {
     if (!generation?.result_image) return;
 
     const shareText =
-      `Prévia da sua peça — Fabrizio Allur\n` +
+      `Prévia da sua peça — Provador Digital\n` +
       `Peça: ${GARMENT_LABELS[generation.garment_type]}\n` +
       `Tecido: ${generation.fabric_name} (${generation.fabric_code})`;
 
@@ -103,7 +116,7 @@ export default function PreviewPage({ params }: Props) {
         const ext = blob.type.includes('png') ? 'png' : 'jpg';
         const file = new File(
           [blob],
-          `preview-${generation.fabric_code ?? 'fabrizio'}.${ext}`,
+          `preview-${generation.fabric_code ?? 'provador'}.${ext}`,
           { type: blob.type }
         );
 
@@ -115,14 +128,14 @@ export default function PreviewPage({ params }: Props) {
             duration: 6000,
           });
           await navigator.share({
-            title: 'Fabrizio Allur — Virtual Preview',
+            title: 'Provador Digital',
             files: [file],
           });
           return;
         }
 
         // Suporta share mas não arquivos — envia só texto
-        await navigator.share({ title: 'Fabrizio Allur', text: shareText });
+        await navigator.share({ title: 'Provador Digital', text: shareText });
         return;
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
@@ -141,7 +154,8 @@ export default function PreviewPage({ params }: Props) {
     generation?.garment_type === 'terno' ? '🤵' :
     generation?.garment_type === 'blazer' ? '🧥' :
     generation?.garment_type === 'camisa' ? '👔' :
-    generation?.garment_type === 'polo'   ? '👕' : '👖';
+    generation?.garment_type === 'polo'   ? '👕' :
+    generation?.garment_type === 'sapato' ? '👞' : '👖';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -166,6 +180,11 @@ export default function PreviewPage({ params }: Props) {
             <p className="text-[10px] text-muted-foreground font-mono">{generation.fabric_code}</p>
           )}
         </div>
+        {atelier && (
+          <div className="shrink-0">
+            <AtelierBrand atelier={atelier} size="sm" showProduct={false} />
+          </div>
+        )}
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row">
@@ -292,13 +311,13 @@ export default function PreviewPage({ params }: Props) {
             </>
           ) : (
             <>
+              <ActionBtn icon={<Layers className="w-3.5 h-3.5" />} primary disabled={!isSuccess}
+                onClick={() => router.push(`/session/${sessionId}?base=${genId}`)}>
+                Continuar sobre esta prévia
+              </ActionBtn>
               <ActionBtn icon={<Shirt className="w-3.5 h-3.5" />} disabled={isLoading}
                 onClick={() => router.push(`/session/${sessionId}`)}>
-                Trocar tecido
-              </ActionBtn>
-              <ActionBtn icon={<span className="text-sm">🔄</span>} disabled={isLoading}
-                onClick={() => router.push(`/session/${sessionId}`)}>
-                Trocar peça
+                Novo look (foto original)
               </ActionBtn>
               <ActionBtn icon={<BarChart2 className="w-3.5 h-3.5" />} disabled={isLoading}
                 onClick={() => router.push(`/session/${sessionId}/compare`)}>

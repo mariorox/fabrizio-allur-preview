@@ -17,6 +17,7 @@ const FASHN_CATEGORY: Record<GarmentType, string> = {
   camisa: 'tops',
   polo: 'tops',
   calca: 'bottoms',
+  sapato: 'bottoms',
 };
 
 export class FashnAdapter implements AIAdapter {

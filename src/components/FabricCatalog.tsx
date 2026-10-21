@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FabricCard } from './FabricCard';
 import { Input } from '@/components/ui/input';
-import type { Fabric } from '@/types';
+import type { Fabric, FabricKind } from '@/types';
 import { Search, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { QuickFabricModal } from './QuickFabricModal';
@@ -11,38 +11,57 @@ import { QuickFabricModal } from './QuickFabricModal';
 interface FabricCatalogProps {
   selectedFabricId?: string | null;
   onSelect: (fabric: Fabric) => void;
+  atelierId?: string | null;
+  /** 'fabric' = catálogo de tecidos · 'shoe' = catálogo de sapatos (peças únicas). */
+  kind?: FabricKind;
   className?: string;
 }
 
-export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricCatalogProps) {
+export function FabricCatalog({ selectedFabricId, onSelect, atelierId, kind = 'fabric', className }: FabricCatalogProps) {
+  const isShoe = kind === 'shoe';
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  // Sequencia as requisições: só a resposta mais recente atualiza o estado
+  // (evita que um fetch antigo/vazio sobrescreva o correto ao trocar de catálogo).
+  const reqIdRef = useRef(0);
 
+  // Categorias só se aplicam a tecidos (Lã, Linho, etc.) — sapatos não usam.
   useEffect(() => {
+    if (isShoe) return;
     fetch('/api/fabric-categories')
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setCategories(data.map((c: { name: string }) => c.name)); })
       .catch(() => {});
-  }, []);
+  }, [isShoe]);
+
+  // Ao alternar entre tecido/sapato, zera busca e filtro (contextos distintos).
+  useEffect(() => { setSearch(''); setCategory(null); }, [isShoe]);
 
   useEffect(() => {
     fetchFabrics();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category]);
+  }, [search, category, atelierId, kind]);
 
   async function fetchFabrics() {
+    const reqId = ++reqIdRef.current;
     setLoading(true);
     const params = new URLSearchParams();
+    params.set('kind', kind);
     if (search) params.set('search', search);
     if (category) params.set('category', category);
-    const res = await fetch(`/api/fabrics?${params}`);
-    const data = await res.json();
-    setFabrics(data);
-    setLoading(false);
+    if (atelierId) params.set('atelier', atelierId);
+    try {
+      const res = await fetch(`/api/fabrics?${params}`);
+      const data = await res.json();
+      if (reqId !== reqIdRef.current) return; // resposta obsoleta — ignora
+      setFabrics(data);
+    } finally {
+      if (reqId === reqIdRef.current) setLoading(false);
+    }
   }
 
   return (
@@ -53,7 +72,7 @@ export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricC
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou código..."
+            placeholder={isShoe ? 'Buscar sapato por nome ou código...' : 'Buscar por nome ou código...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 bg-card border-border text-foreground placeholder:text-muted-foreground
@@ -72,13 +91,14 @@ export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricC
           onClick={() => setShowAddModal(true)}
           className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg border border-primary/30
                      text-primary hover:bg-primary/10 hover:border-primary/60 transition-all"
-          title="Cadastrar tecido"
+          title={isShoe ? 'Cadastrar sapato' : 'Cadastrar tecido'}
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Category filters */}
+      {/* Category filters — só para tecidos */}
+      {!isShoe && (
       <div className="flex gap-1.5 flex-wrap">
         {[null, ...categories].map((cat) => (
           <button
@@ -96,6 +116,7 @@ export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricC
           </button>
         ))}
       </div>
+      )}
 
       {/* Grid */}
       {loading ? (
@@ -112,9 +133,11 @@ export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricC
         </div>
       ) : fabrics.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-3xl mb-3">🧵</p>
-          <p className="text-sm" style={{ fontFamily: 'var(--font-syne)' }}>Nenhum tecido encontrado</p>
-          <p className="text-xs mt-1">Ajuste a busca ou os filtros</p>
+          <p className="text-3xl mb-3">{isShoe ? '👞' : '🧵'}</p>
+          <p className="text-sm" style={{ fontFamily: 'var(--font-syne)' }}>
+            {isShoe ? 'Nenhum sapato encontrado' : 'Nenhum tecido encontrado'}
+          </p>
+          <p className="text-xs mt-1">{isShoe ? 'Cadastre um sapato ou ajuste a busca' : 'Ajuste a busca ou os filtros'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -132,6 +155,8 @@ export function FabricCatalog({ selectedFabricId, onSelect, className }: FabricC
       {/* Modal de cadastro rápido */}
       <QuickFabricModal
         open={showAddModal}
+        atelierId={atelierId}
+        kind={kind}
         onClose={() => setShowAddModal(false)}
         onCreated={(fabric) => {
           // Adiciona o novo tecido no topo da lista e seleciona

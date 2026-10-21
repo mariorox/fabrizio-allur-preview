@@ -3,6 +3,11 @@ import { createFabric, listFabrics } from '@/lib/db';
 import { saveUploadedFile } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import type { FabricKind } from '@/types';
+
+function parseKind(value: string | null): FabricKind | undefined {
+  return value === 'fabric' || value === 'shoe' ? value : undefined;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -10,6 +15,8 @@ export async function GET(request: NextRequest) {
     search: searchParams.get('search') ?? undefined,
     category: searchParams.get('category') ?? undefined,
     collection: searchParams.get('collection') ?? undefined,
+    atelierId: searchParams.get('atelier') ?? undefined,
+    kind: parseKind(searchParams.get('kind')),
     activeOnly: searchParams.get('all') !== 'true',
   });
   return NextResponse.json(fabrics);
@@ -22,6 +29,8 @@ export async function POST(request: NextRequest) {
   const code = formData.get('code') as string;
   const category = (formData.get('category') as string) || undefined;
   const collection = (formData.get('collection') as string) || undefined;
+  const atelier_id = (formData.get('atelier_id') as string) || undefined;
+  const kind = parseKind(formData.get('kind') as string | null) ?? 'fabric';
   const file = formData.get('texture') as File | null;
 
   if (!name || !code || !file) {
@@ -40,6 +49,8 @@ export async function POST(request: NextRequest) {
     category,
     collection,
     texture_image: texturePath,
+    atelier_id,
+    kind,
   });
 
   return NextResponse.json(fabric, { status: 201 });

@@ -1,16 +1,23 @@
 services:
   - type: web
-    name: fabrizio-allur
-    env: node
+    name: provador-digital
+    runtime: node
     plan: free
+    region: oregon
     buildCommand: npm ci && npm run build
     startCommand: npm start
+    healthCheckPath: /
     envVars:
+      # better-sqlite3 é módulo nativo — manter o mesmo Node do ambiente local
       - key: NODE_VERSION
-        value: 20
+        value: 22
+      # Disco efêmero no plano grátis: o catálogo de seed/ é recopiado a cada boot
       - key: DATA_DIR
-        value: /tmp/fabrizio-data
+        value: /tmp/provador-data
       - key: AI_PROVIDER
         value: gemini
       - key: AI_API_KEY
         sync: false
+      # Modelo de imagem (troca sem mexer no código)
+      - key: GEMINI_IMAGE_MODEL
+        value: gemini-nano-banana-2.1

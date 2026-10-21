@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     id: uuidv4(),
     client_name: body.client_name || undefined,
     notes: body.notes || undefined,
+    atelier_id: body.atelier_id || undefined,
   });
   return NextResponse.json(session, { status: 201 });
 }

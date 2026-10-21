@@ -78,7 +78,7 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, className }: BeforeAfte
     <div
       ref={containerRef}
       className={cn(
-        'relative overflow-hidden rounded-2xl select-none cursor-ew-resize touch-none shadow-2xl border border-zinc-200',
+        'relative overflow-hidden rounded-2xl select-none cursor-ew-resize touch-none shadow-2xl border border-border',
         fullscreen && 'rounded-none border-0 w-screen h-screen',
         className,
       )}

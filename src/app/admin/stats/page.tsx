@@ -18,7 +18,7 @@ interface ProviderStatus {
 }
 
 const GARMENT_EMOJI: Record<string, string> = {
-  terno: '🤵', blazer: '🧥', camisa: '👔', polo: '👕', calca: '👖',
+  terno: '🤵', blazer: '🧥', camisa: '👔', polo: '👕', calca: '👖', sapato: '👞',
 };
 
 const MONTH_LABELS: Record<string, string> = {
@@ -27,8 +27,6 @@ const MONTH_LABELS: Record<string, string> = {
   '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez',
 };
 
-const LOGO_URL =
-  'https://img1.wsimg.com/isteam/ip/42736041-0c4b-482d-bb3e-03f79e8f52ca/fabrizio_logo_horiz_branco.png/:/rs=h:99,cg:true,m/qt=q:95';
 
 export default function StatsPage() {
   const router = useRouter();
@@ -68,7 +66,7 @@ export default function StatsPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex justify-center">
-          <img src={LOGO_URL} alt="Fabrizio Allur" className="h-6 w-auto max-w-[130px] object-contain" />
+          <span className="font-display text-sm sm:text-base font-semibold tracking-[0.18em] uppercase text-foreground whitespace-nowrap">Provador Digital</span>
         </div>
         <div className="w-9" />
       </header>
@@ -364,7 +362,7 @@ export default function StatsPage() {
                               width: `${pct}%`,
                               background: i === 0
                                 ? 'var(--color-primary)'
-                                : `oklch(0.72 0.10 82 / ${0.6 - i * 0.07})`,
+                                : `oklch(1 0 0 / ${0.6 - i * 0.07})`,
                             }}
                           />
                         </div>
@@ -531,7 +529,7 @@ export default function StatsPage() {
                             width: `${pct}%`,
                             background: i === 0
                               ? 'var(--color-primary)'
-                              : `oklch(0.72 0.10 82 / ${Math.max(0.15, 0.65 - i * 0.07)})`,
+                              : `oklch(1 0 0 / ${Math.max(0.15, 0.65 - i * 0.07)})`,
                           }}
                         />
                       </div>
@@ -546,7 +544,7 @@ export default function StatsPage() {
         {/* ── Rodapé ── */}
         <p className="text-center text-[10px] text-muted-foreground pb-4"
           style={{ fontFamily: 'var(--font-syne)' }}>
-          FABRIZIO ALLUR · VIRTUAL PREVIEW SYSTEM
+          PROVADOR DIGITAL · VIRTUAL PREVIEW SYSTEM
         </p>
 
       </div>
@@ -709,7 +707,7 @@ function HeatmapChart({ data }: { data: { day_of_week: number; hour: number; cou
                   style={{
                     height: '20px',
                     backgroundColor: count > 0
-                      ? `oklch(0.72 0.10 82 / ${intensity})`
+                      ? `oklch(1 0 0 / ${intensity})`
                       : 'oklch(1 0 0 / 0.05)',
                   }}
                 >
@@ -740,7 +738,7 @@ function HeatmapChart({ data }: { data: { day_of_week: number; hour: number; cou
               style={{
                 width: '10px',
                 height: '10px',
-                backgroundColor: `oklch(0.72 0.10 82 / ${op})`,
+                backgroundColor: `oklch(1 0 0 / ${op})`,
               }}
             />
           ))}
