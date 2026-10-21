@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, RotateCcw, Check, AlertCircle, ImageIcon } from 'lucide-react';
+import { Camera, RotateCcw, Check, AlertCircle, ImageIcon, SwitchCamera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GarmentType } from '@/types';
 
@@ -21,8 +21,20 @@ interface CameraProps {
   className?: string;
 }
 
-type Mode  = 'camera' | 'upload';
-type Phase = 'input'  | 'preview';
+type Mode   = 'camera' | 'upload';
+type Phase  = 'input'  | 'preview';
+type Facing = 'user' | 'environment'; // frontal | traseira
+
+const FACING_KEY = 'vesto:camera-facing';
+
+/** Última câmera usada; padrão traseira (o alfaiate fotografa o cliente). */
+function initialFacing(): Facing {
+  try {
+    return localStorage.getItem(FACING_KEY) === 'user' ? 'user' : 'environment';
+  } catch {
+    return 'environment';
+  }
+}
 
 export function CameraCapture({ garmentType, onCapture, className }: CameraProps) {
   const videoRef      = useRef<HTMLVideoElement>(null);
@@ -31,6 +43,7 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
   const fileGalleryRef = useRef<HTMLInputElement>(null); // galeria/arquivo
 
   const streamRef = useRef<MediaStream | null>(null);
+  const requestRef = useRef(0); // invalida aberturas de câmera antigas
 
   const [mode, setMode]               = useState<Mode>('camera');
   const [phase, setPhase]             = useState<Phase>('input');
@@ -38,30 +51,54 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
   const [capturedBlob, setCapturedBlob]       = useState<Blob | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraBlocked, setCameraBlocked] = useState(false); // HTTP/permissão
+  // Só renderiza no cliente (a captura espera a sessão carregar), então dá para ler o storage aqui
+  const [facing, setFacing]           = useState<Facing>(initialFacing);
+  const [canSwitch, setCanSwitch]     = useState(false);     // aparelho tem 2+ câmeras
+
+  const mirrored = facing === 'user'; // espelha só a frontal (como selfie)
 
   // ── Camera ──────────────────────────────────────────────────────────────────
-
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => setCameraReady(true);
-      }
-    } catch {
-      // HTTPS ausente ou permissão negada — cai direto no modo upload
-      setCameraBlocked(true);
-      setMode('upload');
-    }
-  }, []);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setCameraReady(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    // Alguns celulares não abrem duas câmeras ao mesmo tempo
+    stopCamera();
+    const req = ++requestRef.current;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 960 } },
+      });
+      // Girou de novo enquanto abria: descarta este stream antigo
+      if (req !== requestRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => setCameraReady(true);
+      }
+      // Rótulos/lista de câmeras só ficam disponíveis depois da permissão
+      const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+      setCanSwitch(devices.filter((d) => d.kind === 'videoinput').length > 1);
+    } catch {
+      // HTTPS ausente ou permissão negada — cai direto no modo upload
+      setCameraBlocked(true);
+      setMode('upload');
+    }
+  }, [facing, stopCamera]);
+
+  const flipCamera = useCallback(() => {
+    setFacing((f) => {
+      const next: Facing = f === 'user' ? 'environment' : 'user';
+      try { localStorage.setItem(FACING_KEY, next); } catch { /* sem storage: só não lembra */ }
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -83,17 +120,21 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.save();
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -canvas.width, 0);
-    ctx.restore();
+    if (mirrored) {
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -canvas.width, 0);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0);
+    }
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     setCapturedDataUrl(dataUrl);
     canvas.toBlob((blob) => { if (blob) setCapturedBlob(blob); }, 'image/jpeg', 0.9);
     stopCamera();
     setPhase('preview');
-  }, [stopCamera]);
+  }, [stopCamera, mirrored]);
 
   // ── File input ──────────────────────────────────────────────────────────────
 
@@ -113,9 +154,8 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
     if (capturedDataUrl?.startsWith('blob:')) URL.revokeObjectURL(capturedDataUrl);
     setCapturedDataUrl(null);
     setCapturedBlob(null);
-    setPhase('input');
-    if (mode === 'camera') startCamera();
-  }, [capturedDataUrl, mode, startCamera]);
+    setPhase('input'); // o efeito de mode/phase reabre a câmera
+  }, [capturedDataUrl]);
 
   const confirm = useCallback(() => {
     if (capturedBlob) onCapture(capturedBlob);
@@ -184,8 +224,21 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover scale-x-[-1]"
+              className={cn('w-full h-full object-cover', mirrored && 'scale-x-[-1]')}
             />
+            {canSwitch && (
+              <button
+                type="button"
+                onClick={flipCamera}
+                aria-label={facing === 'user' ? 'Usar câmera traseira' : 'Usar câmera frontal'}
+                title={facing === 'user' ? 'Usar câmera traseira' : 'Usar câmera frontal'}
+                className="absolute top-3 right-3 z-10 w-12 h-12 rounded-full bg-black/45 backdrop-blur-sm
+                           border border-white/25 text-white flex items-center justify-center
+                           active:scale-95 transition-transform"
+              >
+                <SwitchCamera className="w-6 h-6" />
+              </button>
+            )}
             {!cameraReady && (
               <div className="absolute inset-0 flex items-center justify-center text-white">
                 <div className="text-center">
@@ -198,7 +251,7 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-4 border-2 border-white/30 rounded-2xl" />
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-xs bg-black/20 px-3 py-1 rounded-full">
-                  Posicione-se no centro
+                  {facing === 'user' ? 'Posicione-se no centro' : 'Posicione o cliente no centro'}
                 </div>
               </div>
             )}
@@ -242,8 +295,8 @@ export function CameraCapture({ garmentType, onCapture, className }: CameraProps
       </div>
 
       {/* Inputs ocultos */}
-      {/* capture="user" → câmera frontal nativa no celular */}
-      <input ref={filePhotoRef}   type="file" accept="image/*" capture="user"      className="hidden" onChange={handleFileChange} />
+      {/* capture → abre a câmera nativa na mesma lente escolhida (lá dentro também dá para girar) */}
+      <input ref={filePhotoRef}   type="file" accept="image/*" capture={facing}    className="hidden" onChange={handleFileChange} />
       {/* sem capture → deixa o SO escolher (galeria ou câmera) */}
       <input ref={fileGalleryRef} type="file" accept="image/*"                     className="hidden" onChange={handleFileChange} />
 
