@@ -24,6 +24,11 @@ const VISION_MODEL = process.env.GEMINI_VISION_MODEL || 'gemini-3.8-flash';
 // Sobrescrevível por env para comparar/trocar modelos sem mexer no código
 const IMAGE_MODEL  = process.env.GEMINI_IMAGE_MODEL || 'gemini-nano-banana-2.1';
 
+// Chave sem crédito fica de lado por um tempo e depois volta a ser tentada
+// (recarregou a principal → ela volta a ser usada sozinha). Compartilhado entre provas.
+const KEY_COOLDOWN_MS = 30 * 60_000;
+const exhaustedUntil = new Map<string, number>();
+
 const GARMENT_EN: Record<GarmentType, string> = {
   terno:  'a suit JACKET and TROUSERS ONLY (do NOT touch the shirt/undershirt underneath)',
   blazer: 'a blazer jacket ONLY (do NOT touch the shirt underneath)',
@@ -39,7 +44,13 @@ function isShoe(g: GarmentType): boolean {
 }
 
 export class GeminiAdapter implements AIAdapter {
-  constructor(private apiKey: string) {}
+  /** Principal primeiro, depois as reservas (AI_API_KEY_FALLBACK, separadas por vírgula). */
+  private keys: string[];
+
+  constructor(apiKey: string) {
+    const fallbacks = (process.env.AI_API_KEY_FALLBACK ?? '').split(',').map((k) => k.trim());
+    this.keys = [...new Set([apiKey, ...fallbacks].filter(Boolean))];
+  }
 
   async generateTryOn(params: TryOnParams): Promise<TryOnResult> {
     const { clientPhotoPath, fabricTexturePath, garmentType, outputPath } = params;
@@ -503,85 +514,85 @@ RULES:
 
   // ── Helpers HTTP ──
 
-  private callGeminiText(model: string, body: string): Promise<string> {
+  /** POST no Gemini com rodízio de chaves: sem crédito (402) → tenta a próxima. */
+  private async postGemini(model: string, body: string, timeoutMs: number, label: string): Promise<string> {
+    const now = Date.now();
+    const usable = this.keys.filter((k) => (exhaustedUntil.get(k) ?? 0) <= now);
+    // Todas em espera: tenta todas mesmo assim (o crédito pode ter entrado)
+    const order = usable.length ? usable : this.keys;
+
+    for (const key of order) {
+      const { status, data } = await this.request(model, body, timeoutMs, label, key);
+      if (status === 402) {
+        exhaustedUntil.set(key, Date.now() + KEY_COOLDOWN_MS);
+        console.warn(`[Gemini] chave …${key.slice(-4)} sem crédito; tentando a próxima`);
+        continue;
+      }
+      if (status >= 400) throw new Error(`Gemini ${label} HTTP ${status}: ${data.slice(0, 300)}`);
+      exhaustedUntil.delete(key);
+      return data;
+    }
+
+    console.error(`[Gemini] todas as ${this.keys.length} chave(s) sem crédito`);
+    throw new Error(
+      'Os créditos da IA acabaram. Recarregue em AI Studio → Faturamento → Pré-pagamento e tente de novo.',
+    );
+  }
+
+  private request(model: string, body: string, timeoutMs: number, label: string, key: string): Promise<{ status: number; data: string }> {
     return new Promise((resolve, reject) => {
-      const path = `/v1beta/models/${model}:generateContent`;
-      const req  = https.request(
-        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': this.apiKey } },
+      const req = https.request(
+        {
+          hostname: GEMINI_HOST,
+          path: `/v1beta/models/${model}:generateContent`,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': key },
+        },
         (res) => {
           let data = '';
           res.on('data', (c) => (data += c));
-          res.on('end', () => {
-            try {
-              if ((res.statusCode ?? 0) >= 400) {
-                reject(new Error(`Gemini visão HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
-                return;
-              }
-              const parsed = JSON.parse(data);
-              const text   = parsed?.candidates?.[0]?.content?.parts?.find(
-                (p: { text?: string }) => p.text
-              )?.text ?? '';
-              if (!text) reject(new Error(`Gemini visão sem texto: ${data.slice(0, 200)}`));
-              else resolve(text);
-            } catch (e) {
-              reject(e);
-            }
-          });
-        }
+          res.on('end', () => resolve({ status: res.statusCode ?? 0, data }));
+        },
       );
-      req.setTimeout(60_000, () => req.destroy(new Error('Timeout Gemini visão (60s)')));
+      req.setTimeout(timeoutMs, () => req.destroy(new Error(`Timeout Gemini ${label} (${timeoutMs / 1000}s)`)));
       req.on('error', reject);
       req.write(body);
       req.end();
     });
   }
 
-  private callGeminiImage(model: string, body: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const path = `/v1beta/models/${model}:generateContent`;
-      const req  = https.request(
-        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': this.apiKey } },
-        (res) => {
-          let data = '';
-          res.on('data', (c) => (data += c));
-          res.on('end', () => {
-            try {
-              if ((res.statusCode ?? 0) >= 400) {
-                reject(new Error(`Gemini imagem HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
-                return;
-              }
-              const parsed = JSON.parse(data);
-              const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string }; inlineData?: { mimeType: string; data: string } }> =
-                parsed?.candidates?.[0]?.content?.parts ?? [];
+  private async callGeminiText(model: string, body: string): Promise<string> {
+    const data = await this.postGemini(model, body, 60_000, 'visão');
+    const parsed = JSON.parse(data);
+    const text = parsed?.candidates?.[0]?.content?.parts?.find(
+      (p: { text?: string }) => p.text
+    )?.text ?? '';
+    if (!text) throw new Error(`Gemini visão sem texto: ${data.slice(0, 200)}`);
+    return text;
+  }
 
-              const blocked  = parsed?.candidates?.[0]?.finishReason;
-              const feedback = parsed?.promptFeedback?.blockReason;
+  private async callGeminiImage(model: string, body: string): Promise<string> {
+    const data = await this.postGemini(model, body, 120_000, 'imagem');
+    const parsed = JSON.parse(data);
+    const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string }; inlineData?: { mimeType: string; data: string } }> =
+      parsed?.candidates?.[0]?.content?.parts ?? [];
 
-              // A API pode retornar snake_case (inline_data) ou camelCase (inlineData)
-              const imagePart = parts.find((p) => p.inline_data?.data ?? p.inlineData?.data);
-              const imageData = imagePart?.inline_data?.data ?? imagePart?.inlineData?.data;
-              if (!imageData) {
-                const txt = parts.find((p) => p.text)?.text ?? '';
-                reject(new Error(
-                  `Gemini não gerou imagem. ` +
-                  (blocked  ? `Motivo: ${blocked}. ` : '') +
-                  (feedback ? `Bloqueio: ${feedback}. ` : '') +
-                  (txt ? `Texto: ${txt.slice(0, 200)}` : `Resposta: ${data.slice(0, 300)}`)
-                ));
-                return;
-              }
-              resolve(imageData);
-            } catch (e) {
-              reject(e);
-            }
-          });
-        }
+    const blocked  = parsed?.candidates?.[0]?.finishReason;
+    const feedback = parsed?.promptFeedback?.blockReason;
+
+    // A API pode retornar snake_case (inline_data) ou camelCase (inlineData)
+    const imagePart = parts.find((p) => p.inline_data?.data ?? p.inlineData?.data);
+    const imageData = imagePart?.inline_data?.data ?? imagePart?.inlineData?.data;
+    if (!imageData) {
+      const txt = parts.find((p) => p.text)?.text ?? '';
+      throw new Error(
+        `Gemini não gerou imagem. ` +
+        (blocked  ? `Motivo: ${blocked}. ` : '') +
+        (feedback ? `Bloqueio: ${feedback}. ` : '') +
+        (txt ? `Texto: ${txt.slice(0, 200)}` : `Resposta: ${data.slice(0, 300)}`)
       );
-      req.setTimeout(120_000, () => req.destroy(new Error('Timeout Gemini imagem (120s)')));
-      req.on('error', reject);
-      req.write(body);
-      req.end();
-    });
+    }
+    return imageData;
   }
 }
 

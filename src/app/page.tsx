@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AtelierWithStats } from '@/types';
-import { Settings, BarChart2, MapPin, ArrowRight } from 'lucide-react';
+import { Settings, BarChart2, MapPin, ArrowRight, Users } from 'lucide-react';
 import { VestoLogo } from '@/components/VestoLogo';
 
 export default function MarketplacePage() {
@@ -27,6 +27,14 @@ export default function MarketplacePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <VestoLogo size="md" />
           <div className="flex items-center shrink-0">
+            <button
+              onClick={() => router.push('/clients')}
+              className="p-2 sm:p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              title="Clientes atendidos"
+              aria-label="Clientes atendidos"
+            >
+              <Users className="w-[18px] h-[18px]" />
+            </button>
             <button
               onClick={() => router.push('/admin/fabrics')}
               className="p-2 sm:p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"

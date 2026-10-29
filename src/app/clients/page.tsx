@@ -138,7 +138,7 @@ export default function ClientsPage() {
     <div className="min-h-screen bg-background flex flex-col">
 
       {/* Header */}
-      <header className="bg-card border-b border-border px-5 py-4 flex items-center gap-4 sticky top-0 z-10">
+      <header className="bar-surface border-b border-border px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-4 sticky top-0 z-10">
         <button
           onClick={() => router.push('/')}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 p-2 -ml-2"
@@ -147,11 +147,10 @@ export default function ClientsPage() {
           <span className="hidden sm:inline">Início</span>
         </button>
         <div className="flex-1">
-          <h1 className="text-sm font-semibold text-foreground leading-none"
-            style={{ fontFamily: 'var(--font-syne)' }}>
+          <h1 className="font-display text-[20px] leading-tight text-foreground">
             Clientes
           </h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[12.5px] text-muted-foreground mt-0.5">
             {loading ? '…' : `${total} atendimento${total !== 1 ? 's' : ''} no total`}
           </p>
         </div>
