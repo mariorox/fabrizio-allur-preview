@@ -1,6 +1,6 @@
 /**
  * Google Gemini Adapter — 3 etapas (pipeline híbrido):
- *   1. gemini-2.5-flash (visão): descreve o tecido em detalhes
+ *   1. VISION_MODEL (visão): descreve o tecido em detalhes
  *   2. IMAGE_MODEL (edição): gera preview com roupa trocada (para sombras/dobras)
  *   3. IMAGE_MODEL (máscara): pinta a roupa de verde para segmentação
  *   4. Sharp (texture-mapper): aplica a textura REAL sobre a foto original usando a máscara
@@ -19,7 +19,8 @@ import type { AIAdapter, TryOnParams, TryOnResult, MultiTryOnParams } from './ad
 import type { GarmentType } from '@/types';
 
 const GEMINI_HOST  = 'generativelanguage.googleapis.com';
-const VISION_MODEL = 'gemini-2.5-flash';
+// gemini-2.5-flash não é mais liberado para contas novas; ambos sobrescrevíveis por env
+const VISION_MODEL = process.env.GEMINI_VISION_MODEL || 'gemini-3.8-flash';
 // Sobrescrevível por env para comparar/trocar modelos sem mexer no código
 const IMAGE_MODEL  = process.env.GEMINI_IMAGE_MODEL || 'gemini-nano-banana-2.1';
 
@@ -231,7 +232,7 @@ Output the corrected photo.`;
   }
 
   /**
-   * Etapa 1 — descreve o item de referência com gemini-2.5-flash.
+   * Etapa 1 — descreve o item de referência com VISION_MODEL.
    * Tecido → foco em padrão/proporções. Sapato → foco no produto (tipo, cor,
    * material, forma, solado, fecho, detalhes), pois é uma peça única e não uma
    * textura repetível.
@@ -504,9 +505,9 @@ RULES:
 
   private callGeminiText(model: string, body: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const path = `/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+      const path = `/v1beta/models/${model}:generateContent`;
       const req  = https.request(
-        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } },
+        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': this.apiKey } },
         (res) => {
           let data = '';
           res.on('data', (c) => (data += c));
@@ -537,9 +538,9 @@ RULES:
 
   private callGeminiImage(model: string, body: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const path = `/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+      const path = `/v1beta/models/${model}:generateContent`;
       const req  = https.request(
-        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } },
+        { hostname: GEMINI_HOST, path, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': this.apiKey } },
         (res) => {
           let data = '';
           res.on('data', (c) => (data += c));

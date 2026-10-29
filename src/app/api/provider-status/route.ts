@@ -60,7 +60,7 @@ async function checkGemini(apiKey: string): Promise<ProviderStatus> {
     label: 'Google Gemini',
     hasKey: !!apiKey,
     keyValid: null,
-    models: ['gemini-2.5-flash', 'gemini-3.1-flash-image-preview'],
+    models: [process.env.GEMINI_VISION_MODEL || 'gemini-3.8-flash', process.env.GEMINI_IMAGE_MODEL || 'gemini-nano-banana-2.1'],
     dashboardUrl: 'https://aistudio.google.com/apikey',
   };
 
@@ -75,9 +75,9 @@ async function checkGemini(apiKey: string): Promise<ProviderStatus> {
 
       const req = https.request({
         hostname: 'generativelanguage.googleapis.com',
-        path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        path: `/v1beta/models/${process.env.GEMINI_VISION_MODEL || 'gemini-3.8-flash'}:generateContent`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'x-goog-api-key': apiKey },
       }, (res) => {
         let data = '';
         res.on('data', (c) => (data += c));
